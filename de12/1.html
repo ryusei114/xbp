@@ -11,4 +11,25 @@ HTML（HyperText Markup Language）は、文章に「ここは見出し」「こ
 < hr >	区切り線	話題の切れ目に<br>
 < strong > / < em >	重要 / 強調	太字・斜体になるが、本来は「意味」を表す<br>
 < span >	文中の一部をまとめる	CSSで装飾するときに便利（意味はなし）</div><br>
- <h2>HTMLとは</h2><br>
+ <h2>gitへのpush方法</h2><br>
+<div>初回のみ、ユーザー情報を設定します。<br>
+初回だけコピー<br>
+git config --global user.name  "あなたの名前"<br>
+git config --global user.email "you@example.com"<br>
+１.リポジトリを用意する<br>
+GitHubで「New repository」を作成。すでにあるものは git clone URL で取得します。<br>
+git init                        # 新規フォルダをGit管理にする<br>
+git branch -M main          # ブランチ名をmainに<br>
+git remote add origin https://github.com/ユーザー名/リポジトリ名.git<br>
+２.状態を確認する<br>
+git status<br>
+３.変更をステージに載せる（add）<br>
+git add index.html   # 1ファイルだけ<br>
+git add .            # すべての変更<br>
+４.履歴として記録する（commit）<br>
+メッセージには「何をしたか」を短く書きます。<br>
+git commit -m "トップページのHTMLを作成"<br>
+５.GitHubへ送る（push）<br>
+初回は -u を付けて送り先を覚えさせると、次回から git push だけでOKです。<br>
+git push -u origin main   # 初回<br>
+git push                  # 2回目以降<br>
