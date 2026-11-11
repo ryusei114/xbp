@@ -1,40 +1,204 @@
 <!DOCTYPE html>
-<html lang="jp">
+<html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <title>XBP_HPsample</title>
-    <link rel="stylesheet" href="./css/style.css">
-    <link rel="shortcut icon" href="./images/xbp.ico">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>XBP_HPsample</title>
+<link rel="shortcut icon" href="./images/xbp.ico">
+<style>
+:root{
+  --sky1:#2f6fb5; --sky2:#9cc9ea; --sky3:#fde8c8;
+  --sea1:#1b6f8f; --sea2:#0a3550;
+  --far:#8aa3bd; --mid:#4f6a85; --near:#233447;
+  --sun:rgba(255,244,214,.95); --ink:#0d2233; --card:rgba(255,255,255,.55);
+  --cardline:rgba(255,255,255,.7); --text:#0d2233; --star:0;
+}
+body[data-time="evening"]{
+  --sky1:#3b3f7a; --sky2:#e58a6b; --sky3:#ffd29a;
+  --sea1:#6b4a6e; --sea2:#1d1d3b;
+  --far:#a08aa8; --mid:#6a4f6e; --near:#2b2140;
+  --sun:rgba(255,190,120,.95);
+}
+body[data-time="night"]{
+  --sky1:#050b1e; --sky2:#14284f; --sky3:#2c456f;
+  --sea1:#0d2a46; --sea2:#030a16;
+  --far:#344a6b; --mid:#1f3050; --near:#0b1426;
+  --sun:rgba(220,232,255,.9); --card:rgba(10,20,40,.55);
+  --cardline:rgba(180,205,255,.25); --text:#eaf2ff; --star:1;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{
+  font-family:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif;
+  color:var(--text); background:var(--sea2); overflow-x:hidden;
+  transition:color 1.5s;
+}
+/* ---------- 背景シーン ---------- */
+.scene{position:fixed;inset:0;z-index:-1;overflow:hidden}
+.scene>*{position:absolute;left:0;right:0}
+.sky{inset:0;background:linear-gradient(to bottom,var(--sky1) 0%,var(--sky2) 55%,var(--sky3) 70%);transition:background 2s}
+.stars{inset:0 0 40% 0;opacity:calc(var(--star));transition:opacity 2s;
+  background-image:
+   radial-gradient(1.5px 1.5px at 12% 20%,#fff,transparent),radial-gradient(1px 1px at 28% 55%,#fff,transparent),
+   radial-gradient(1.5px 1.5px at 44% 12%,#fff,transparent),radial-gradient(1px 1px at 61% 40%,#fff,transparent),
+   radial-gradient(1.5px 1.5px at 77% 18%,#fff,transparent),radial-gradient(1px 1px at 90% 50%,#fff,transparent),
+   radial-gradient(1px 1px at 5% 70%,#fff,transparent),radial-gradient(1.5px 1.5px at 53% 70%,#fff,transparent);
+  animation:twinkle 4s ease-in-out infinite alternate}
+@keyframes twinkle{to{filter:brightness(.55)}}
+.sun{top:34%;left:68%;width:18vmin;height:18vmin;margin:-9vmin 0 0 -9vmin;border-radius:50%;
+  background:radial-gradient(circle,#fff 0 18%,var(--sun) 30%,transparent 70%);filter:blur(2px);transition:background 2s}
+.cloud{height:12vh;border-radius:50%;filter:blur(14px);background:rgba(255,255,255,.55);width:30vw;left:-35vw;
+  animation:drift linear infinite}
+body[data-time="night"] .cloud{background:rgba(120,150,200,.25)}
+.c1{top:10%;animation-duration:140s}.c2{top:22%;width:40vw;animation-duration:200s;animation-delay:-90s;opacity:.7}
+.c3{top:5%;width:22vw;animation-duration:110s;animation-delay:-40s;opacity:.6}
+@keyframes drift{to{transform:translateX(160vw)}}
+.photo{inset:0;background:url("./images/bg.jpg") center/cover no-repeat} /* 写真を置くとここに表示 */
+svg.mt{bottom:24vh;width:100%;height:46vh}
+.haze{bottom:24vh;height:30vh;background:linear-gradient(to top,var(--sky3),transparent);opacity:.55;mix-blend-mode:screen}
+.sea{bottom:0;height:34vh;background:linear-gradient(to bottom,var(--sea1),var(--sea2));transition:background 2s}
+.glitter{bottom:0;height:34vh;left:56%;right:auto;width:24%;
+  background:repeating-linear-gradient(to bottom,transparent 0 6px,var(--sun) 6px 8px,transparent 8px 16px);
+  -webkit-mask-image:linear-gradient(to bottom,#000,transparent);mask-image:linear-gradient(to bottom,#000,transparent);
+  opacity:.55;animation:glit 2.4s ease-in-out infinite alternate;transform-origin:top}
+@keyframes glit{from{transform:scaleX(.55) translateY(0);opacity:.35}to{transform:scaleX(1) translateY(6px);opacity:.7}}
+.wave{height:20vh;width:200%;left:0;background-repeat:repeat-x;background-size:50% 100%;animation:flow linear infinite}
+.w1{bottom:24vh;opacity:.35;animation-duration:38s}
+.w2{bottom:17vh;opacity:.5;animation-duration:26s;animation-direction:reverse}
+.w3{bottom:9vh;opacity:.7;animation-duration:18s}
+.w4{bottom:0;opacity:.9;animation-duration:12s;animation-direction:reverse}
+@keyframes flow{to{transform:translateX(-50%)}}
+/* 波(SVGを背景に) */
+.w1,.w3{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cpath d='M0 60 Q150 10 300 60 T600 60 T900 60 T1200 60 V120 H0Z' fill='%23ffffff' fill-opacity='.28'/%3E%3C/svg%3E")}
+.w2,.w4{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cpath d='M0 70 Q100 20 200 70 T400 70 T600 70 T800 70 T1000 70 T1200 70 V120 H0Z' fill='%23062a40' fill-opacity='.55'/%3E%3Cpath d='M0 70 Q100 20 200 70 T400 70 T600 70 T800 70 T1000 70 T1200 70' fill='none' stroke='%23ffffff' stroke-opacity='.55' stroke-width='3'/%3E%3C/svg%3E")}
+/* 鳥 */
+.bird{position:fixed;z-index:0;top:0;left:0;width:34px;pointer-events:none;will-change:transform}
+.bird svg{width:100%;overflow:visible}
+.bird .wing{transform-origin:17px 10px;animation:flap .5s ease-in-out infinite alternate}
+.bird .wing.r{animation-delay:0s}
+@keyframes flap{from{transform:scaleY(1)}to{transform:scaleY(-.5)}}
+/* ---------- コンテンツ ---------- */
+.wrap{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:6vh 20px 30vh}
+.logo{display:inline-block;margin-bottom:2vh}
+.logo img{max-height:64px;filter:drop-shadow(0 2px 8px rgba(0,0,0,.35))}
+h1{font-size:clamp(2rem,6vw,3.6rem);font-weight:500;letter-spacing:.14em;margin:.2em 0 .6em;
+  text-shadow:0 2px 24px rgba(255,255,255,.35);animation:rise 1.8s cubic-bezier(.2,.7,.2,1) both}
+@keyframes rise{from{opacity:0;letter-spacing:.5em;filter:blur(8px)}}
+section{background:var(--card);backdrop-filter:blur(14px) saturate(1.3);-webkit-backdrop-filter:blur(14px) saturate(1.3);
+  border:1px solid var(--cardline);border-radius:18px;padding:22px 26px 14px;margin:0 0 26px;
+  box-shadow:0 20px 50px rgba(5,25,45,.25);transition:background 2s}
+h2{font-size:1.15rem;font-weight:500;letter-spacing:.12em;margin:0 0 .6em;padding-bottom:.5em;border-bottom:1px solid var(--cardline)}
+ol{margin:0;padding:0;list-style:none;counter-reset:n}
+li{counter-increment:n;border-bottom:1px solid var(--cardline)}
+li:last-child{border:0}
+li a{display:flex;gap:14px;align-items:baseline;padding:11px 4px;color:inherit;text-decoration:none;transition:padding .35s,color .35s}
+li a::before{content:counter(n);min-width:1.6em;font-size:.85rem;opacity:.6;font-variant-numeric:tabular-nums}
+li a:hover,li a:focus-visible{padding-left:16px;outline:none;color:#0a6aa1}
+body[data-time="night"] li a:hover,body[data-time="night"] li a:focus-visible{color:#9fd0ff}
+/* 時間切替 */
+.time{position:fixed;z-index:5;right:16px;top:16px;display:flex;gap:6px;background:var(--card);padding:5px;border-radius:99px;
+  border:1px solid var(--cardline);backdrop-filter:blur(10px)}
+.time button{font:inherit;font-size:.85rem;color:inherit;background:none;border:0;border-radius:99px;padding:6px 14px;cursor:pointer}
+.time button[aria-pressed="true"]{background:rgba(255,255,255,.75);color:#0d2233}
+.time button:focus-visible{outline:2px solid #0a6aa1}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
 </head>
-<body>
-    <logotohome>
-    <a href="../index.html"><img src="./images/0_XBlogo.png" alt=""></a>
-    </logotohome>
-    <h1>デザイン演習Ⅰ・Ⅱ</h1>
-        <h2>HTMLに関すること</h2>
-        <ol>
-            <li><a href="./hp1.html" target="_blank">htmlの基礎知識</a></li>
-            <li><a href="./hp2.html" target="_blank">htmlのwork</a></li>
-            <li><a href="./test.html" target="_blank">テストページ</a></li>
-        </ol>
-        <h2>演習ノート一覧</h2>
-        <ol>  
-            <li><a href="./1.html" target="_blank">第１回</a></li>
-            <li><a href="./2.html" target="_blank">第２回「路上観察」</a></li>
-            <li><a href="./3.html" target="_blank">第３回「データ分析」</a></li>
-            <li><a href="./4.html" target="_blank">第４回</a></li>
-            <li><a href="./5.html" target="_blank">第５回</a></li>
-            <li><a href="./6.html" target="_blank">第６回</a></li>
-            <li><a href="./7.html" target="_blank">第７回</a></li>
-            <li><a href="./8.html" target="_blank">第８回</a></li>
-            <li><a href="./9.html" target="_blank">第９回</a></li>
-            <li><a href="./10.html" target="_blank">第１０回</a></li>
+<body data-time="day">
 
+<div class="scene" aria-hidden="true">
+  <div class="sky"></div>
+  <div class="stars"></div>
+  <div class="sun"></div>
+  <div class="cloud c1"></div><div class="cloud c2"></div><div class="cloud c3"></div>
+  <!-- 山: 本物の写真を使う場合は images/bg.jpg を置いてください -->
+  <svg class="mt" viewBox="0 0 1440 460" preserveAspectRatio="none">
+    <defs>
+      <filter id="rock" x="-5%" y="-5%" width="110%" height="110%">
+        <feTurbulence type="fractalNoise" baseFrequency=".012 .03" numOctaves="5" seed="7" result="n"/>
+        <feDisplacementMap in="SourceGraphic" in2="n" scale="38"/>
+      </filter>
+      <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="3"/><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .22 0"/></filter>
+      <linearGradient id="gf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset=".35" stop-color="var(--far)"/><stop offset="1" stop-color="var(--far)"/></linearGradient>
+      <linearGradient id="gm" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--mid)" stop-opacity=".6"/><stop offset=".4" stop-color="var(--mid)"/><stop offset="1" stop-color="var(--near)"/></linearGradient>
+    </defs>
+    <path filter="url(#rock)" fill="url(#gf)" d="M0 460V250L120 190 230 240 380 120 470 190 560 150 700 60 820 170 930 120 1060 210 1200 110 1320 200 1440 150V460Z"/>
+    <path filter="url(#rock)" fill="url(#gm)" d="M0 460V330L160 260 300 320 470 210 620 300 780 230 940 320 1100 240 1260 310 1440 250V460Z"/>
+    <path fill="var(--near)" d="M0 460V400C200 360 360 410 560 385S900 350 1100 390 1340 380 1440 370V460Z"/>
+    <rect width="1440" height="460" filter="url(#grain)" opacity=".6"/>
+  </svg>
+  <div class="photo"></div>
+  <div class="haze"></div>
+  <div class="sea"></div>
+  <div class="glitter"></div>
+  <div class="wave w1"></div><div class="wave w2"></div><div class="wave w3"></div><div class="wave w4"></div>
+</div>
 
-    
-<br>
-<br>
+<div class="time" role="group" aria-label="時間帯">
+  <button data-t="day" aria-pressed="true">昼</button>
+  <button data-t="evening" aria-pressed="false">夕</button>
+  <button data-t="night" aria-pressed="false">夜</button>
+</div>
 
+<div class="wrap">
+  <div class="logo"><a href="../index.html"><img src="./images/0_XBlogo.png" alt="ホームへ戻る"></a></div>
+  <h1>デザイン演習Ⅰ・Ⅱ</h1>
 
+  <section>
+    <h2>HTMLに関すること</h2>
+    <ol>
+      <li><a href="./hp1.html" target="_blank">htmlの基礎知識</a></li>
+      <li><a href="./hp2.html" target="_blank">htmlのwork</a></li>
+      <li><a href="./test.html" target="_blank">テストページ</a></li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>演習ノート一覧</h2>
+    <ol>
+      <li><a href="./1.html" target="_blank">第１回</a></li>
+      <li><a href="./2.html" target="_blank">第２回「路上観察」</a></li>
+      <li><a href="./3.html" target="_blank">第３回「データ分析」</a></li>
+      <li><a href="./4.html" target="_blank">第４回</a></li>
+      <li><a href="./5.html" target="_blank">第５回</a></li>
+      <li><a href="./6.html" target="_blank">第６回</a></li>
+      <li><a href="./7.html" target="_blank">第７回</a></li>
+      <li><a href="./8.html" target="_blank">第８回</a></li>
+      <li><a href="./9.html" target="_blank">第９回</a></li>
+      <li><a href="./10.html" target="_blank">第１０回</a></li>
+    </ol>
+  </section>
+</div>
+
+<script>
+// 時間帯の切り替え
+const btns=document.querySelectorAll('.time button');
+btns.forEach(b=>b.addEventListener('click',()=>{
+  document.body.dataset.time=b.dataset.t;
+  btns.forEach(x=>x.setAttribute('aria-pressed',x===b));
+}));
+
+// 鳥: 数秒〜十数秒おきに画面を横切る
+const BIRD='<svg viewBox="0 0 34 20"><path class="wing" d="M17 10 Q9 0 0 6 Q9 5 17 10Z" fill="#1a2a3a"/><path class="wing r" d="M17 10 Q25 0 34 6 Q25 5 17 10Z" fill="#1a2a3a"/></svg>';
+function flock(){
+  if(matchMedia('(prefers-reduced-motion:reduce)').matches) return;
+  const n=1+Math.floor(Math.random()*4), W=innerWidth, H=innerHeight;
+  const ltr=Math.random()<.5, y0=H*(.08+Math.random()*.3), dur=14000+Math.random()*8000;
+  for(let i=0;i<n;i++){
+    const el=document.createElement('div'); el.className='bird'; el.innerHTML=BIRD;
+    const s=.6+Math.random()*.6, dx=i*38, dy=(i%2?1:-1)*i*14;
+    el.style.opacity=document.body.dataset.time==='night'?.35:.85;
+    document.body.appendChild(el);
+    const a=el.animate([
+      {transform:`translate(${ltr?-80-dx:W+80+dx}px,${y0+dy}px) scale(${s}) scaleX(${ltr?1:-1})`},
+      {transform:`translate(${W*.5}px,${y0+dy-H*.08}px) scale(${s}) scaleX(${ltr?1:-1})`,offset:.5},
+      {transform:`translate(${ltr?W+80:-80}px,${y0+dy+H*.03}px) scale(${s}) scaleX(${ltr?1:-1})`}
+    ],{duration:dur+i*400,easing:'ease-in-out'});
+    a.onfinish=()=>el.remove();
+  }
+}
+setTimeout(flock,2500);
+(function loop(){setTimeout(()=>{flock();loop()},6000+Math.random()*9000)})();
+</script>
 </body>
 </html>
