@@ -1,0 +1,616 @@
+
+<!DOCTYPE html>
+
+<html lang="ja">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- ページのタイトル：ブラウザのタブに表示される名前 -->
+
+<title>MONO TALK 制作ノート</title>
+
+
+
+<style>
+
+/* 【色の設定：昼】 色を変数(--名前)にまとめて、あとで var(--名前) で使い回す。昼夜切り替えは、この値を差し替えるだけで実現している */
+
+:root{
+
+  --sky1:#2f6fb5; --sky2:#9cc9ea; --sky3:#fde8c8;
+
+  --sea1:#1b6f8f; --sea2:#0a3550;
+
+  --far:#8aa3bd; --mid:#4f6a85; --near:#233447;
+
+  --sun:rgba(255,244,214,.95); --ink:#0d2233; --card:rgba(255,255,255,.55);
+
+  --cardline:rgba(255,255,255,.7); --text:#0d2233; --star:0;
+
+}
+
+/* 【色の設定：夕方】 <body data-time="evening"> のとき、上の変数を夕焼けの色に上書き */
+
+body[data-time="evening"]{
+
+  --sky1:#3b3f7a; --sky2:#e58a6b; --sky3:#ffd29a;
+
+  --sea1:#6b4a6e; --sea2:#1d1d3b;
+
+  --far:#a08aa8; --mid:#6a4f6e; --near:#2b2140;
+
+  --sun:rgba(255,190,120,.95);
+
+}
+
+/* 【色の設定：夜】 <body data-time="night"> のとき、夜の色に上書き。--star:1 で星を表示、文字色も明るくする */
+
+body[data-time="night"]{
+
+  --sky1:#050b1e; --sky2:#14284f; --sky3:#2c456f;
+
+  --sea1:#0d2a46; --sea2:#030a16;
+
+  --far:#344a6b; --mid:#1f3050; --near:#0b1426;
+
+  --sun:rgba(220,232,255,.9); --card:rgba(10,20,40,.55);
+
+  --cardline:rgba(180,205,255,.25); --text:#eaf2ff; --star:1;
+
+}
+
+/* 【全体の基本設定】 余白の計算方法をそろえ、ページ端の隙間をなくす */
+
+*{box-sizing:border-box}
+
+html,body{margin:0;min-height:100%}
+
+/* 【ページ全体】 文字のフォント(明朝体)・文字色・背景色。色が切り替わるときはゆっくり変化する */
+
+body{
+
+  font-family:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif;
+
+  color:var(--text); background:var(--sea2); overflow-x:hidden;
+
+  transition:color 1.5s;
+
+}
+
+/* ---------- 背景シーン ---------- */
+
+/* 【背景シーン全体】 画面に固定して、コンテンツの後ろ(z-index:-1)に置く。中身の要素は下で重ねて配置 */
+
+.scene{position:fixed;inset:0;z-index:-1;overflow:hidden}
+
+.scene>*{position:absolute;left:0;right:0}
+
+/* 空：上から下へのグラデーション */
+
+.sky{inset:0;background:linear-gradient(to bottom,var(--sky1) 0%,var(--sky2) 55%,var(--sky3) 70%);transition:background 2s}
+
+/* 星：小さな光の点を並べ、夜だけ見える(opacity)。ゆっくりまたたく */
+
+.stars{inset:0 0 40% 0;opacity:calc(var(--star));transition:opacity 2s;
+
+  background-image:
+
+   radial-gradient(1.5px 1.5px at 12% 20%,#fff,transparent),radial-gradient(1px 1px at 28% 55%,#fff,transparent),
+
+   radial-gradient(1.5px 1.5px at 44% 12%,#fff,transparent),radial-gradient(1px 1px at 61% 40%,#fff,transparent),
+
+   radial-gradient(1.5px 1.5px at 77% 18%,#fff,transparent),radial-gradient(1px 1px at 90% 50%,#fff,transparent),
+
+   radial-gradient(1px 1px at 5% 70%,#fff,transparent),radial-gradient(1.5px 1.5px at 53% 70%,#fff,transparent);
+
+  animation:twinkle 4s ease-in-out infinite alternate}
+
+/* またたきのアニメーション(明るさを下げて戻す) */
+
+@keyframes twinkle{to{filter:brightness(.55)}}
+
+/* 太陽(夜は月の色になる)：ぼかした円 */
+
+.sun{top:34%;left:68%;width:18vmin;height:18vmin;margin:-9vmin 0 0 -9vmin;border-radius:50%;
+
+  background:radial-gradient(circle,#fff 0 18%,var(--sun) 30%,transparent 70%);filter:blur(2px);transition:background 2s}
+
+/* 雲：ぼかした楕円が、左から右へゆっくり流れる */
+
+.cloud{height:12vh;border-radius:50%;filter:blur(14px);background:rgba(255,255,255,.55);width:30vw;left:-35vw;
+
+  animation:drift linear infinite}
+
+body[data-time="night"] .cloud{background:rgba(120,150,200,.25)}
+
+.c1{top:10%;animation-duration:140s}.c2{top:22%;width:40vw;animation-duration:200s;animation-delay:-90s;opacity:.7}
+
+.c3{top:5%;width:22vw;animation-duration:110s;animation-delay:-40s;opacity:.6}
+
+/* 雲が横に流れるアニメーション */
+
+@keyframes drift{to{transform:translateX(160vw)}}
+
+/* 写真レイヤー：images/bg.jpg を置くと、山のイラストの上に表示される(なければ何も出ない) */
+
+.photo{inset:0;background:none} /* 写真を置くとここに表示 */
+
+/* 山(SVGで描いたもの)の配置 */
+
+svg.mt{bottom:24vh;width:100%;height:46vh}
+
+/* 霞：山の足元を白っぽくぼかして、遠近感を出す */
+
+.haze{bottom:24vh;height:30vh;background:linear-gradient(to top,var(--sky3),transparent);opacity:.55;mix-blend-mode:screen}
+
+/* 海の水面：上から下へ濃くなるグラデーション */
+
+.sea{bottom:0;height:34vh;background:linear-gradient(to bottom,var(--sea1),var(--sea2));transition:background 2s}
+
+/* 太陽の光の反射：横縞を伸び縮みさせてキラキラさせる */
+
+.glitter{bottom:0;height:34vh;left:56%;right:auto;width:24%;
+
+  background:repeating-linear-gradient(to bottom,transparent 0 6px,var(--sun) 6px 8px,transparent 8px 16px);
+
+  -webkit-mask-image:linear-gradient(to bottom,#000,transparent);mask-image:linear-gradient(to bottom,#000,transparent);
+
+  opacity:.55;animation:glit 2.4s ease-in-out infinite alternate;transform-origin:top}
+
+@keyframes glit{from{transform:scaleX(.55) translateY(0);opacity:.35}to{transform:scaleX(1) translateY(6px);opacity:.7}}
+
+/* 波：横幅200%の波模様を左へ動かし続ける。w1〜w4は奥から手前の4層で、速さ・向きがそれぞれ違う */
+
+.wave{height:20vh;width:200%;left:0;background-repeat:repeat-x;background-size:50% 100%;animation:flow linear infinite}
+
+.w1{bottom:24vh;opacity:.35;animation-duration:38s}
+
+.w2{bottom:17vh;opacity:.5;animation-duration:26s;animation-direction:reverse}
+
+.w3{bottom:9vh;opacity:.7;animation-duration:18s}
+
+.w4{bottom:0;opacity:.9;animation-duration:12s;animation-direction:reverse}
+
+@keyframes flow{to{transform:translateX(-50%)}}
+
+/* 波(SVGを背景に) */
+
+.w1,.w3{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cpath d='M0 60 Q150 10 300 60 T600 60 T900 60 T1200 60 V120 H0Z' fill='%23ffffff' fill-opacity='.28'/%3E%3C/svg%3E")}
+
+.w2,.w4{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cpath d='M0 70 Q100 20 200 70 T400 70 T600 70 T800 70 T1000 70 T1200 70 V120 H0Z' fill='%23062a40' fill-opacity='.55'/%3E%3Cpath d='M0 70 Q100 20 200 70 T400 70 T600 70 T800 70 T1000 70 T1200 70' fill='none' stroke='%23ffffff' stroke-opacity='.55' stroke-width='3'/%3E%3C/svg%3E")}
+
+/* 【鳥】 JavaScriptが作る鳥の見た目。羽(.wing)を上下に動かして羽ばたかせる */
+
+/* 鳥 */
+
+.bird{position:fixed;z-index:0;top:0;left:0;width:34px;pointer-events:none;will-change:transform}
+
+.bird svg{width:100%;overflow:visible}
+
+.bird .wing{transform-origin:17px 10px;animation:flap .5s ease-in-out infinite alternate}
+
+.bird .wing.r{animation-delay:0s}
+
+@keyframes flap{from{transform:scaleY(1)}to{transform:scaleY(-.5)}}
+
+/* 【ここから本文まわりのデザイン】 */
+
+/* ---------- コンテンツ ---------- */
+
+/* 本文を入れる箱：中央寄せ・最大幅を決める。下の余白(30vh)で、波の部分に文字がかからないようにしている */
+
+.wrap{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:6vh 20px 30vh}
+
+/* ロゴ画像まわり(このページでは未使用) */
+
+.logo{display:inline-block;margin-bottom:2vh}
+
+.logo img{max-height:64px;filter:drop-shadow(0 2px 8px rgba(0,0,0,.35))}
+
+/* 大見出し：ページを開いたとき、文字間が縮みながらにじんで現れる */
+
+h1{font-size:clamp(2rem,6vw,3.6rem);font-weight:500;letter-spacing:.14em;margin:.2em 0 .6em;
+
+  text-shadow:0 2px 24px rgba(255,255,255,.35);animation:rise 1.8s cubic-bezier(.2,.7,.2,1) both}
+
+@keyframes rise{from{opacity:0;letter-spacing:.5em;filter:blur(8px)}}
+
+/* カード：半透明＋背景ぼかし(すりガラス風)で、背景が透けても文字が読める */
+
+section{background:var(--card);backdrop-filter:blur(14px) saturate(1.3);-webkit-backdrop-filter:blur(14px) saturate(1.3);
+
+  border:1px solid var(--cardline);border-radius:18px;padding:22px 26px 14px;margin:0 0 26px;
+
+  box-shadow:0 20px 50px rgba(5,25,45,.25);transition:background 2s}
+
+/* 中見出し：下に細い線を引く */
+
+h2{font-size:1.15rem;font-weight:500;letter-spacing:.12em;margin:0 0 .6em;padding-bottom:.5em;border-bottom:1px solid var(--cardline)}
+
+/* 番号付きリスト(一覧ページ用)のデザイン */
+
+ol{margin:0;padding:0;list-style:none;counter-reset:n}
+
+li{counter-increment:n;border-bottom:1px solid var(--cardline)}
+
+li:last-child{border:0}
+
+li a{display:flex;gap:14px;align-items:baseline;padding:11px 4px;color:inherit;text-decoration:none;transition:padding .35s,color .35s}
+
+li a::before{content:counter(n);min-width:1.6em;font-size:.85rem;opacity:.6;font-variant-numeric:tabular-nums}
+
+li a:hover,li a:focus-visible{padding-left:16px;outline:none;color:#0a6aa1}
+
+body[data-time="night"] li a:hover,body[data-time="night"] li a:focus-visible{color:#9fd0ff}
+
+/* 【昼・夕・夜ボタン】 右上に固定。選択中のボタンだけ白く光る */
+
+/* 時間切替 */
+
+.time{position:fixed;z-index:5;right:16px;top:16px;display:flex;gap:6px;background:var(--card);padding:5px;border-radius:99px;
+
+  border:1px solid var(--cardline);backdrop-filter:blur(10px)}
+
+.time button{font:inherit;font-size:.85rem;color:inherit;background:none;border:0;border-radius:99px;padding:6px 14px;cursor:pointer}
+
+.time button[aria-pressed="true"]{background:rgba(255,255,255,.75);color:#0d2233}
+
+.time button:focus-visible{outline:2px solid #0a6aa1}
+
+/* 「動きを減らす」設定の人には、アニメーションを止める(配慮) */
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+
+
+
+/* ---------- ノートページ共通のデザイン ---------- */
+
+/* ---------- ノートページ用 ---------- */
+
+/* ノートページは本文を少し広めにする */
+
+.wrap.note{max-width:820px}
+
+/* 「← 一覧へ戻る」ボタン */
+
+.back{display:inline-block;margin:0 0 2vh;color:inherit;text-decoration:none;font-size:.9rem;opacity:.85;padding:6px 14px;border:1px solid var(--cardline);border-radius:99px;background:var(--card);backdrop-filter:blur(10px)}
+
+.back:hover,.back:focus-visible{opacity:1;outline:2px solid #0a6aa1}
+
+/* 本文の段落：行間を広めにして読みやすく */
+
+.note p{line-height:1.95;margin:.2em 0 1em}
+
+.note h3{font-size:1rem;font-weight:500;margin:1.4em 0 .4em;letter-spacing:.06em}
+
+.lead{font-size:1.02rem}
+
+.tbl{overflow-x:auto;margin:.4em 0 1em}
+
+table{border-collapse:collapse;width:100%;min-width:560px;font-size:.92rem}
+
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--cardline);vertical-align:top;line-height:1.7}
+
+th{font-weight:500;opacity:.7;font-size:.85rem}
+
+td:first-child{white-space:nowrap}
+
+code{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:.88em;background:rgba(255,255,255,.5);padding:.1em .4em;border-radius:5px}
+
+body[data-time="night"] code{background:rgba(255,255,255,.12)}
+
+.codebox{position:relative;margin:.4em 0 1.1em}
+
+pre{margin:0;padding:14px 16px;border-radius:12px;background:rgba(6,24,40,.82);color:#dcecff;overflow-x:auto;line-height:1.8;font-size:.88rem}
+
+pre code{background:none;padding:0;font-size:inherit}
+
+pre .c{color:#8fb4d6}
+
+.copy{position:absolute;top:8px;right:8px;font:inherit;font-size:.75rem;color:#dcecff;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);border-radius:99px;padding:3px 11px;cursor:pointer}
+
+.copy:hover,.copy:focus-visible{background:rgba(255,255,255,.28);outline:none}
+
+.step{display:flex;gap:14px}
+
+.step>b{flex:none;width:2em;height:2em;margin-top:1.15em;border-radius:50%;display:grid;place-items:center;font-weight:500;font-size:.9rem;background:rgba(255,255,255,.65);color:#0d2233}
+
+.step>div{flex:1;min-width:0}
+
+
+
+/* 【写真(図)】 figure＝写真と説明文のセット。画面幅に合わせて縮み、角丸と影をつける */
+
+figure{margin:.4em 0 1em;text-align:center}
+
+figure img{display:block;width:min(100%,640px);margin:0 auto;border-radius:12px;cursor:zoom-in;box-shadow:0 14px 36px rgba(5,25,45,.35);transition:transform .4s}
+
+figure img:hover{transform:scale(1.015)}
+
+/* 写真の下の説明文 */
+
+figcaption{margin-top:.6em;font-size:.85rem;opacity:.75}
+
+/* 【拡大表示】 写真クリックで出る、黒い背景いっぱいの表示(普段は display:none で隠れている) */
+
+.lb{position:fixed;inset:0;z-index:20;display:none;place-items:center;background:rgba(3,12,24,.86);cursor:zoom-out;padding:3vmin}
+
+.lb.on{display:grid}
+
+.lb img{max-width:100%;max-height:100%;border-radius:10px}
+
+</style>
+
+</head>
+
+<body data-time="day">
+
+
+
+<!-- ======== 背景シーン（飾り）。読み上げソフトには無視させる(aria-hidden) ======== -->
+
+<div class="scene" aria-hidden="true">
+
+    <!-- 空 -->
+
+  <div class="sky"></div>
+
+  <div class="stars"></div>
+
+  <div class="sun"></div>
+
+  <!-- 雲 3つ -->
+
+  <div class="cloud c1"></div><div class="cloud c2"></div><div class="cloud c3"></div>
+
+  <!-- 山: 本物の写真を使う場合は images/bg.jpg を置いてください -->
+
+  <!-- 山：SVGで描いた図形に、ギザギザのフィルター(rock)とざらつき(grain)を加えて岩肌っぽくしている -->
+
+  <svg class="mt" viewBox="0 0 1440 460" preserveAspectRatio="none">
+
+    <defs>
+
+      <filter id="rock" x="-5%" y="-5%" width="110%" height="110%">
+
+        <feTurbulence type="fractalNoise" baseFrequency=".012 .03" numOctaves="5" seed="7" result="n"/>
+
+        <feDisplacementMap in="SourceGraphic" in2="n" scale="38"/>
+
+      </filter>
+
+      <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="3"/><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .22 0"/></filter>
+
+      <linearGradient id="gf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset=".35" stop-color="var(--far)"/><stop offset="1" stop-color="var(--far)"/></linearGradient>
+
+      <linearGradient id="gm" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--mid)" stop-opacity=".6"/><stop offset=".4" stop-color="var(--mid)"/><stop offset="1" stop-color="var(--near)"/></linearGradient>
+
+    </defs>
+
+    <path filter="url(#rock)" fill="url(#gf)" d="M0 460V250L120 190 230 240 380 120 470 190 560 150 700 60 820 170 930 120 1060 210 1200 110 1320 200 1440 150V460Z"/>
+
+    <path filter="url(#rock)" fill="url(#gm)" d="M0 460V330L160 260 300 320 470 210 620 300 780 230 940 320 1100 240 1260 310 1440 250V460Z"/>
+
+    <path fill="var(--near)" d="M0 460V400C200 360 360 410 560 385S900 350 1100 390 1340 380 1440 370V460Z"/>
+
+    <rect width="1440" height="460" filter="url(#grain)" opacity=".6"/>
+
+  </svg>
+
+  <!-- 写真を置く場所(images/bg.jpg) -->
+
+  <div class="photo"></div>
+
+  <!-- 霞 → 海 → 光の反射 → 波4層 の順に重ねる -->
+
+  <div class="haze"></div>
+
+  <div class="sea"></div>
+
+  <div class="glitter"></div>
+
+  <div class="wave w1"></div><div class="wave w2"></div><div class="wave w3"></div><div class="wave w4"></div>
+
+</div>
+
+
+
+<!-- ======== 昼・夕・夜の切り替えボタン（押すと下のJavaScriptが body の data-time を書き換える） ======== -->
+
+<div class="time" role="group" aria-label="時間帯">
+
+  <button data-t="day" aria-pressed="true">昼</button>
+
+  <button data-t="evening" aria-pressed="false">夕</button>
+
+  <button data-t="night" aria-pressed="false">夜</button>
+
+</div>
+
+
+
+<!-- ======== ここから本文 ======== -->
+
+<div class="wrap note">
+
+  <!-- 戻るボタン：一覧ページへのリンク(<a>) -->
+
+  <a class="back" href="./index.html">← 一覧へ戻る</a> <button class="back" id="downloadApp" type="button">アプリのHTMLをダウンロード</button>
+
+
+
+  <!-- ページの大見出し(h1)：1ページに1つだけ -->
+
+  <h1>MONO TALK</h1>
+
+
+
+  <section><h2>はじめに</h2><p class="lead">今回は日用品の管理アプリを作りました。</p><p>普段の生活でシャンプーやトイレットペーパーなどの日用品をよく買い忘れることから、このアプリの発想を得ました。日用品の管理をゲーム感覚で楽しめるようにしたいと考えました。</p></section>
+<section><h2>アプリの説明</h2><p>今回作ったのは「MONO TALK ― 生活の冒険 ―」です。日用品をキャラクターに見立て、残りの使用日数をHPとして表示します。残り日数は設定した平均使用日数から計算した目安です。</p><div class="step"><b>1</b><div><h3>日用品を登録する</h3><p>名前や平均使用日数、現在の使用日数などを設定します。</p></div></div><div class="step"><b>2</b><div><h3>日数を進める</h3><p>＋1日経過ボタンで管理日を進め、残り日数の変化を確認します。</p></div></div><div class="step"><b>3</b><div><h3>警報を確認する</h3><p>残り日数が少なくなると、カードの色や日用品の発言が変わります。</p></div></div><div class="step"><b>4</b><div><h3>補充する</h3><p>補充ボタンを押すと使用日数がリセットされ、HPが回復します。</p></div></div></section>
+<section><h2>使っている技術の説明</h2><p>このアプリではHTML、CSS、JavaScriptを使っています。</p><div class="tbl"><table><thead><tr><th>技術・命令</th><th>はたらき</th><th>このアプリでの使い方</th></tr></thead><tbody><tr><td><code>HTML</code></td><td>画面の構造を作る</td><td>日用品カードやボタン、メニューを配置する</td></tr><tr><td><code>CSS</code></td><td>色や大きさ、配置を設定する</td><td>RPG風の画面や危険度別の色を表現する</td></tr><tr><td><code>JavaScript</code></td><td>画面に動きをつける</td><td>日数経過や補充、画面切り替えを処理する</td></tr><tr><td><code>function</code></td><td>処理をまとめる</td><td>残り日数の計算や日用品の編集を行う</td></tr><tr><td><code>if</code></td><td>条件によって処理を分ける</td><td>残り日数に応じた警報を表示する</td></tr><tr><td><code>localStorage</code></td><td>ブラウザ内に情報を保存する</td><td>登録した日用品や設定を保存する</td></tr></tbody></table></div><h3>コード全体</h3><div class="codebox"><button class="copy" type="button">コピー</button><pre><code id="appSource">&lt;!doctype html&gt;&lt;html lang=&quot;ja&quot;&gt;&lt;meta charset=&quot;utf-8&quot;&gt;&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width,initial-scale=1&quot;&gt;&lt;title&gt;MONO TALK — 生活の冒険&lt;/title&gt;&lt;style&gt;*{box-sizing:border-box}body{margin:0;background:#e9eee9;font:15px system-ui;color:#263b32}main{max-width:600px;margin:auto;background:#f8faf7;min-height:100dvh;display:flex;flex-direction:column}header{background:#21483b;color:white;padding:22px;position:sticky;top:0;z-index:2}header b{font-size:24px;letter-spacing:3px}small{opacity:.75}nav,form,.quick{display:flex;gap:8px;padding:12px;flex-wrap:wrap}button,input,select{font:inherit;border:1px solid #ccd8ce;border-radius:14px;padding:11px;background:white;color:inherit}button{cursor:pointer;transition:transform .15s,background .2s}button:active{transform:scale(.91);background:#bde5c9}button.primary{background:#246b50;color:white}#chat{padding:18px;flex:1;min-height:300px;max-height:55vh;overflow:auto}.msg{display:flex;gap:10px;margin:15px 0;animation:pop .35s both}.avatar{font-size:28px;border:0;background:#e1ebe1;width:52px;height:52px;padding:5px}.bubble{background:white;border-radius:4px 18px 18px;padding:12px;box-shadow:0 2px 8px #0001;max-width:340px;white-space:pre-wrap;overflow-wrap:anywhere}.me{justify-content:flex-end}.me .bubble{background:#cce9c9;border-radius:18px 4px 18px 18px}.name{font-size:11px;color:#687b70;margin-bottom:4px}.panel{padding:16px;border-top:1px solid #ddd}.item{padding:12px;background:white;border-radius:15px;margin:8px 0;animation:pop .3s}.item button{float:right}input{min-width:0;flex:1}#typing{padding:0 20px;color:#688075;animation:pulse 1s infinite} @keyframes pop{from{opacity:0;transform:translateY(12px) scale(.96)}to{opacity:1;transform:none}}@keyframes pulse{50%{opacity:.3}}@keyframes wiggle{25%{transform:rotate(-15deg)}75%{transform:rotate(15deg)}}.wiggle{animation:wiggle .4s}footer{padding:12px;font-size:11px;color:#687b70}dialog{border:0;border-radius:24px;width:min(94vw,540px);max-height:88dvh;overflow:auto;padding:22px;color:inherit;background:#f8faf7;box-shadow:0 20px 80px #0004}dialog::backdrop{background:#19372d88}dialog label{display:grid;gap:5px;margin:12px 0;font-size:13px}dialog input,dialog select,dialog textarea{width:100%;font:inherit;padding:10px;border:1px solid #ccd8ce;border-radius:12px;background:white}dialog form{display:block;padding:0} .editgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}.actions{display:flex;gap:8px;flex-wrap:wrap}.item button{float:none;padding:7px 12px}.item .actions{margin-top:10px}.meter{height:6px;background:#e5ebe5;border-radius:8px;margin-top:9px;overflow:hidden}.meter span{display:block;height:100%;transition:width .4s}.avatar img{width:100%;height:100%;object-fit:cover;border-radius:12px}button:hover{filter:brightness(.96)} .closepanel{float:right;font-size:22px;line-height:1;padding:7px 12px;margin-left:8px}.panel:not([hidden]){animation:pop .25s both}.emotion{font-size:11px;color:#687b70}dialog .closepanel{position:sticky;top:0;z-index:2} .alarm{padding:14px;border-radius:14px;margin:8px 0;background:white;border-left:5px solid var(--alarm);animation:pop .3s both}.alarm strong{color:var(--alarm);display:block;margin:5px 0}.alarm.critical strong{font-size:23px;font-weight:900;animation:shake .5s 2}.alarm small{display:block}.alarm button{margin-top:8px}.alarm .days{font-weight:bold;color:var(--alarm)}@keyframes shake{25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}@media(prefers-reduced-motion:reduce){*{animation:none!important}} 
+:root{color-scheme:dark;--gold:#e7c77d;--ink:#111c33;--panel:#20304b}body{background:#0b1325;color:#f5f0dc;font:15px system-ui}main{max-width:none;min-height:100vh;display:grid;grid-template-columns:205px minmax(0,1fr) 320px;grid-template-rows:82px 1fr;gap:14px;padding:14px;background:radial-gradient(ellipse at top,#304d65,#10182b 65%)}header{grid-column:1/-1;position:static;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(110deg,#263b60,#18243d);border:2px solid var(--gold);border-radius:9px;padding:12px 24px;box-shadow:inset 0 0 0 3px #152039}header b{color:#ffe5a1;font-family:Georgia,serif;font-size:30px}aside,article,#urgent{min-width:0}aside{background:#17243c;border:1px solid #a78b53;border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:12px}aside h3{color:var(--gold);font-size:14px;letter-spacing:2px}#navigation{display:grid;gap:10px}#navigation button{text-align:left;padding:15px;background:#293c5a;border:1px solid #52647d}#navigation button.active{background:linear-gradient(90deg,#80612b,#3c4e68);border-color:#ffe0a0;box-shadow:0 0 14px #e7c77d33}.sidefoot{margin-top:auto;font-size:11px;color:var(--gold)}article{display:flex;flex-direction:column;gap:12px}nav{padding:0}button,input,select,dialog input,dialog select,dialog textarea{background:#263b58;color:#fff;border:1px solid #70819a;border-radius:7px}button:hover{filter:brightness(1.2)}button:active{background:#755e36}button.primary{background:#32745c;border-color:#8ac8a3}.panel,.item,.alarm,dialog{background:#1b2b46;color:#f5f0dc;border:1px solid #a58c59;border-radius:8px}.panel{padding:16px}.alarm{background:#26364e;border-left:5px solid var(--alarm)}.alarm strong,.alarm .days{color:var(--alarm)}#urgent{align-self:start;margin:0;max-height:calc(100vh - 110px);overflow:auto}.land{position:relative;overflow:hidden;border:2px solid var(--gold);border-radius:9px;padding:20px;background:linear-gradient(160deg,#183c68 0%,#578aaf 43%,#467f70 44%,#234c40 100%);min-height:290px}.land:before{content:&#x27;&#x27;;position:absolute;inset:40% 0 0;background:#335e58;clip-path:polygon(0 50%,18% 0,36% 60%,57% 0,78% 65%,100% 10%,100% 100%,0 100%);opacity:.7}.landtitle,#party{position:relative}.landtitle{font-size:20px;font-weight:bold;text-shadow:0 2px #14263a}.landtitle small{display:block;font-size:11px;margin:6px 0 18px}#party{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px}.hero{background:#101e35e8;border:1px solid var(--gold);border-top:4px solid var(--hero);border-radius:8px;padding:12px;display:grid;gap:9px;text-align:center}.sprite{font-size:48px;background:none;border:0;min-height:75px;animation:floaty 3s ease-in-out infinite}.sprite img{width:64px;height:64px;object-fit:contain}.sprite:active{transform:scale(.8)}@keyframes floaty{50%{translate:0 -5px}}.meter{background:#0c1426;height:9px}.windowtitle{color:var(--gold);font-weight:bold;padding:12px;border-bottom:1px solid #a58c59}#chatpage{background:#101a30;border:2px solid var(--gold);border-radius:8px}#chat{min-height:150px;max-height:32vh;padding:12px}.bubble{background:#263b58;color:#fff;border:1px solid #52647d;max-width:520px}.me .bubble{background:#315d51}.name,footer,#typing{color:#b6c5d8}.quick,form{padding:10px}#level{color:#ffe5a1;text-align:right;font-weight:bold}.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}.tile{padding:18px;border:1px solid #657d99;border-radius:8px;background:#293d59}.tile h3{margin:0 0 8px;color:#ffe5a1}.calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}.cell{min-height:70px;background:#293d59;border:1px solid #52647d;padding:5px;overflow-wrap:anywhere;font-size:12px}.cell.today{border:2px solid #f9d477}.cell span{display:block;color:#ffcf78}dialog{width:min(90vw,760px)}[hidden]{display:none!important}@media(max-width:1000px){main{grid-template-columns:160px minmax(0,1fr)}#urgent{grid-column:2;max-height:none}header{grid-column:1/-1}}@media(max-width:650px){main{display:flex;flex-direction:column;padding:8px}#navigation{grid-template-columns:repeat(2,1fr)}header b{font-size:22px}aside h3,.sidefoot{display:none}.calendar .cell{min-height:50px}}@media(prefers-reduced-motion:reduce){.sprite{animation:none}}
+
+main{grid-template-columns:150px minmax(0,1fr) 220px;grid-template-rows:64px auto} article{min-width:0;padding:8px;gap:8px} aside{padding:8px} .land{padding:8px;min-height:0}.landtitle{font-size:15px}.landtitle small{margin:2px 0 6px} #party{grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}.hero{padding:4px;gap:2px;border-radius:5px;grid-template-columns:1fr 1fr;align-items:center;border-color:var(--hero)}.hero .sprite,.hero b,.hero small,.hero .meter{grid-column:1/-1}.hero b{font-size:12px;overflow-wrap:anywhere}.hero small{font-size:10px}.hero button{padding:2px;font-size:10px;min-height:0}.hero .sprite{font-size:24px;min-height:26px;padding:0}.sprite img{width:28px;height:28px}.hero .meter{height:5px}.hero[data-danger=&quot;3&quot;],.hero[data-danger=&quot;4&quot;],.hero[data-danger=&quot;5&quot;]{background:#542632}.hero[data-danger=&quot;2&quot;]{background:#503a22}.hero[data-danger=&quot;1&quot;]{background:#454023}#chat{min-height:40px;max-height:105px;padding:5px}.quick{display:none}#urgent{max-height:calc(100vh - 85px);overflow:auto}.alarm{padding:5px;margin:4px 0}.alarm strong{font-size:12px}#controls{gap:4px}#controls button{padding:4px 7px} @media(max-width:950px){main{grid-template-columns:110px minmax(0,1fr) 150px}.hero b{font-size:10px}}
+&lt;/style&gt;&lt;main&gt;&lt;header&gt;&lt;div&gt;&lt;b&gt;✦ MONO TALK&lt;/b&gt;&lt;br&gt;&lt;small&gt;生活の冒険 • Ver.6.2&lt;/small&gt;&lt;/div&gt;&lt;div&gt;&lt;button onclick=&quot;advance(-1)&quot;&gt;−1日&lt;/button&gt; &lt;b id=&quot;simdate&quot;&gt;&lt;/b&gt; &lt;button onclick=&quot;advance(1)&quot;&gt;＋1日経過 ▶&lt;/button&gt; &lt;span id=&quot;level&quot;&gt;&lt;/span&gt;&lt;/div&gt;&lt;/header&gt;&lt;aside&gt;&lt;h3&gt;冒険メニュー&lt;/h3&gt;&lt;div id=&quot;navigation&quot;&gt;&lt;/div&gt;&lt;div class=&quot;sidefoot&quot;&gt;✦ 暮らしを守る冒険者 ✦&lt;/div&gt;&lt;/aside&gt;&lt;article&gt;&lt;nav id=&quot;controls&quot;&gt;&lt;button onclick=&quot;panel(&#x27;items&#x27;)&quot;&gt;🧴 日用品&lt;/button&gt;&lt;button onclick=&quot;panel(&#x27;settings&#x27;)&quot;&gt;⚙ 設定&lt;/button&gt;&lt;button onclick=&quot;meeting()&quot;&gt;🔔 状況確認&lt;/button&gt;&lt;button id=&quot;autotoggle&quot; onclick=&quot;toggleAuto()&quot;&gt;&lt;/button&gt;&lt;small id=&quot;autostatus&quot; style=&quot;align-self:center&quot;&gt;&lt;/small&gt;&lt;/nav&gt;&lt;section id=&quot;home&quot;&gt;&lt;div class=&quot;land&quot;&gt;&lt;div class=&quot;landtitle&quot;&gt;王国の日用品パーティー&lt;small&gt;HPは残り使用期間の推定値&lt;/small&gt;&lt;/div&gt;&lt;div id=&quot;party&quot;&gt;&lt;/div&gt;&lt;/div&gt;&lt;/section&gt;&lt;section id=&quot;items&quot; class=&quot;panel&quot; hidden&gt;&lt;button class=&quot;closepanel&quot; aria-label=&quot;閉じる&quot; onclick=&quot;go(&#x27;home&#x27;)&quot;&gt;×&lt;/button&gt;&lt;b&gt;日用品の登録・編集・補充&lt;/b&gt;&lt;div id=&quot;list&quot;&gt;&lt;/div&gt;&lt;form id=&quot;add&quot;&gt;&lt;input id=&quot;nm&quot; placeholder=&quot;日用品名&quot; required&gt;&lt;input id=&quot;days&quot; type=&quot;number&quot; min=&quot;1&quot; placeholder=&quot;平均使用日数&quot; required&gt;&lt;input id=&quot;addelapsed&quot; type=&quot;number&quot; min=&quot;0&quot; step=&quot;1&quot; placeholder=&quot;現在の使用日数（任意）&quot;&gt;&lt;button&gt;登録&lt;/button&gt;&lt;/form&gt;&lt;/section&gt;&lt;section id=&quot;settings&quot; class=&quot;panel&quot; hidden&gt;&lt;button class=&quot;closepanel&quot; aria-label=&quot;閉じる&quot; onclick=&quot;go(&#x27;home&#x27;)&quot;&gt;×&lt;/button&gt;&lt;label&gt;新規キャラの標準性格 &lt;select id=&quot;style&quot;&gt;&lt;option&gt;毒舌&lt;/option&gt;&lt;option&gt;優しい&lt;/option&gt;&lt;option&gt;カオス&lt;/option&gt;&lt;/select&gt;&lt;/label&gt;&lt;p&gt;自動お知らせ上限：&lt;input id=&quot;limit&quot; type=&quot;number&quot; min=&quot;0&quot; max=&quot;20&quot; value=&quot;20&quot; style=&quot;width:75px&quot;&gt; 件 / 日&lt;/p&gt;&lt;p&gt;自動通知上限：&lt;input id=&quot;notice&quot; type=&quot;number&quot; min=&quot;0&quot; max=&quot;3&quot; value=&quot;3&quot; style=&quot;width:75px&quot;&gt; 回 / 日（画面内のみ）&lt;/p&gt;&lt;p&gt;警報チェック間隔：&lt;select id=&quot;interval&quot;&gt;&lt;option value=&quot;5&quot;&gt;5〜15秒（デモ）&lt;/option&gt;&lt;option value=&quot;60&quot;&gt;1〜3分&lt;/option&gt;&lt;option value=&quot;600&quot;&gt;10〜30分&lt;/option&gt;&lt;/select&gt;&lt;/p&gt;&lt;button onclick=&quot;saveSettings()&quot;&gt;保存&lt;/button&gt;&lt;/section&gt;&lt;section id=&quot;extra&quot; class=&quot;panel&quot; hidden&gt;&lt;/section&gt;&lt;div id=&quot;chatpage&quot;&gt;&lt;div class=&quot;windowtitle&quot;&gt;✦ 日用品からの伝言&lt;/div&gt;&lt;div id=&quot;chat&quot; aria-live=&quot;polite&quot;&gt;&lt;/div&gt;&lt;div id=&quot;typing&quot; hidden&gt;お知らせを確認中…&lt;/div&gt;&lt;div class=&quot;quick&quot;&gt;&lt;button onclick=&quot;send(&#x27;みんなあと何日持つ？&#x27;)&quot;&gt;あと何日？&lt;/button&gt;&lt;button onclick=&quot;send(&#x27;買い物行くよ&#x27;)&quot;&gt;買い物行くよ&lt;/button&gt;&lt;button onclick=&quot;send(&#x27;使い方荒くない？&#x27;)&quot;&gt;使い方荒くない？&lt;/button&gt;&lt;/div&gt;&lt;form id=&quot;send&quot;&gt;&lt;input id=&quot;message&quot; placeholder=&quot;日用品に話しかける…&quot; required&gt;&lt;button class=&quot;primary&quot;&gt;送信 ➤&lt;/button&gt;&lt;/form&gt;&lt;/div&gt;&lt;footer&gt;試作品：残り日数は推定値です。自動通知は画面内のみ。実際の生成AI・バックグラウンド通知は未接続。&lt;/footer&gt;&lt;/article&gt;&lt;section id=&quot;urgent&quot; class=&quot;panel&quot;&gt;&lt;/section&gt;&lt;dialog id=&quot;editor&quot;&gt;&lt;button class=&quot;closepanel&quot; aria-label=&quot;閉じる&quot; onclick=&quot;$(&#x27;editor&#x27;).close()&quot;&gt;×&lt;/button&gt;&lt;form id=&quot;editform&quot;&gt;&lt;h2&gt;キャラクター編集&lt;/h2&gt;&lt;div class=&quot;editgrid&quot;&gt;&lt;label&gt;名前&lt;input id=&quot;en&quot; required&gt;&lt;/label&gt;&lt;label&gt;絵文字&lt;input id=&quot;ee&quot; required&gt;&lt;/label&gt;&lt;label&gt;平均使用日数&lt;input id=&quot;ep&quot; type=&quot;number&quot; min=&quot;1&quot; max=&quot;3650&quot; required&gt;&lt;/label&gt;&lt;label&gt;現在の使用日数（経過日数）&lt;input id=&quot;elapsed&quot; type=&quot;number&quot; min=&quot;0&quot; step=&quot;1&quot; required&gt;&lt;/label&gt;&lt;label&gt;使用開始日&lt;input id=&quot;es&quot; type=&quot;date&quot; required&gt;&lt;/label&gt;&lt;p id=&quot;daypreview&quot; aria-live=&quot;polite&quot; style=&quot;grid-column:1/-1;color:#f5bc63&quot;&gt;&lt;/p&gt;&lt;label&gt;通知する何日前&lt;input id=&quot;ew&quot; type=&quot;number&quot; min=&quot;0&quot; max=&quot;365&quot; required&gt;&lt;/label&gt;&lt;label&gt;テーマカラー&lt;input id=&quot;ec&quot; type=&quot;color&quot;&gt;&lt;/label&gt;&lt;label&gt;性格&lt;select id=&quot;eh&quot;&gt;&lt;option&gt;毒舌&lt;/option&gt;&lt;option&gt;優しい&lt;/option&gt;&lt;option&gt;カオス&lt;/option&gt;&lt;option&gt;真面目&lt;/option&gt;&lt;option&gt;天然&lt;/option&gt;&lt;/select&gt;&lt;/label&gt;&lt;label&gt;口調&lt;select id=&quot;et&quot;&gt;&lt;option&gt;タメ口&lt;/option&gt;&lt;option&gt;敬語&lt;/option&gt;&lt;option&gt;関西弁&lt;/option&gt;&lt;/select&gt;&lt;/label&gt;&lt;label&gt;一人称&lt;input id=&quot;ei&quot; required&gt;&lt;/label&gt;&lt;label&gt;感情&lt;select id=&quot;em&quot;&gt;&lt;option&gt;自動&lt;/option&gt;&lt;option&gt;喜び&lt;/option&gt;&lt;option&gt;怒り&lt;/option&gt;&lt;option&gt;悲しみ&lt;/option&gt;&lt;option&gt;不安&lt;/option&gt;&lt;option&gt;疲労&lt;/option&gt;&lt;option&gt;皮肉&lt;/option&gt;&lt;option&gt;驚き&lt;/option&gt;&lt;option&gt;嫉妬&lt;/option&gt;&lt;option&gt;感謝&lt;/option&gt;&lt;option&gt;カオス&lt;/option&gt;&lt;/select&gt;&lt;/label&gt;&lt;label&gt;発言頻度&lt;select id=&quot;ef&quot;&gt;&lt;option&gt;普通&lt;/option&gt;&lt;option&gt;よく喋る&lt;/option&gt;&lt;option&gt;無口&lt;/option&gt;&lt;/select&gt;&lt;/label&gt;&lt;label&gt;ユーモア（1〜5）&lt;input id=&quot;ej&quot; type=&quot;range&quot; min=&quot;1&quot; max=&quot;5&quot;&gt;&lt;/label&gt;&lt;label&gt;画像（任意）&lt;input id=&quot;imagefile&quot; type=&quot;file&quot; accept=&quot;image/*&quot;&gt;&lt;/label&gt;&lt;/div&gt;&lt;button type=&quot;button&quot; id=&quot;clearimage&quot;&gt;画像を解除&lt;/button&gt;&lt;p&gt;&lt;small&gt;テンプレートに {name}、{days}、{me} を入れると自動置換されます。空欄なら性格に応じたセリフを使用。&lt;/small&gt;&lt;/p&gt;&lt;label&gt;余裕があるとき&lt;textarea id=&quot;ok&quot;&gt;&lt;/textarea&gt;&lt;/label&gt;&lt;label&gt;なくなりそうなとき&lt;textarea id=&quot;soon&quot;&gt;&lt;/textarea&gt;&lt;/label&gt;&lt;label&gt;買い替え時期&lt;textarea id=&quot;due&quot;&gt;&lt;/textarea&gt;&lt;/label&gt;&lt;label&gt;補充されたとき&lt;textarea id=&quot;fresh&quot;&gt;&lt;/textarea&gt;&lt;/label&gt;&lt;div class=&quot;actions&quot;&gt;&lt;button class=&quot;primary&quot;&gt;保存&lt;/button&gt;&lt;button type=&quot;button&quot; onclick=&quot;$(&#x27;editor&#x27;).close()&quot;&gt;キャンセル&lt;/button&gt;&lt;button type=&quot;button&quot; id=&quot;deleteitem&quot;&gt;削除&lt;/button&gt;&lt;/div&gt;&lt;/form&gt;&lt;/dialog&gt;&lt;/main&gt;&lt;script&gt;
+const $=id=&gt;document.getElementById(id), day=()=&gt;ago(0), ago=n=&gt;{let d=new Date();d.setDate(d.getDate()+(state?.offset||0)-n);return d.toLocaleDateString(&#x27;sv-SE&#x27;)};let state;try{state=JSON.parse(localStorage.getItem(&#x27;mono-v1&#x27;))}catch{};state=state||{items:[{n:&#x27;シャンプー&#x27;,e:&#x27;🧴&#x27;,p:30,s:ago(27)},{n:&#x27;トイレットペーパー&#x27;,e:&#x27;🧻&#x27;,p:14,s:ago(13)},{n:&#x27;洗濯洗剤&#x27;,e:&#x27;🫧&#x27;,p:30,s:ago(9)},{n:&#x27;歯磨き粉&#x27;,e:&#x27;🪥&#x27;,p:45,s:ago(20)}],messages:[],style:&#x27;毒舌&#x27;,limit:20,notice:3,date:day(),count:0,alerts:0};function save(){try{localStorage.setItem(&#x27;mono-v1&#x27;,JSON.stringify(state))}catch{}}function reset(){if(state.date!==day()){state.date=day();state.count=0;state.alerts=0}}function left(x){return x.p-Math.floor((Date.parse(day())-Date.parse(x.s))/86400000)}function panel(id){$(id).hidden=!$(id).hidden;renderItems()}function defaults(x){return Object.assign({emotion:&#x27;自動&#x27;,w:3,c:&#x27;#91b7a0&#x27;,h:state.style,tone:&#x27;タメ口&#x27;,pron:&#x27;俺&#x27;,freq:&#x27;普通&#x27;,humor:3,templates:{},img:&#x27;&#x27;},x)}let editing, pendingImage=&#x27;&#x27;;function edit(x){editing=x;let y=defaults(x);for(let [id,v] of Object.entries({en:y.n,ee:y.e,ep:y.p,es:y.s,elapsed:Math.max(0,y.p-left(y)),ew:y.w,ec:y.c,eh:y.h,et:y.tone,ei:y.pron,ef:y.freq,em:y.emotion,ej:y.humor,ok:y.templates.ok||&#x27;&#x27;,soon:y.templates.soon||&#x27;&#x27;,due:y.templates.due||&#x27;&#x27;,fresh:y.templates.fresh||&#x27;&#x27;}))$(id).value=v;previewDays();pendingImage=y.img;$(&#x27;imagefile&#x27;).value=&#x27;&#x27;;$(&#x27;editor&#x27;).showModal()}function previewDays(){let p=Number($(&#x27;ep&#x27;).value),n=Number($(&#x27;elapsed&#x27;).value);$(&#x27;daypreview&#x27;).textContent=&#x27;残り &#x27;+Math.max(0,p-n)+&#x27; 日（推定）｜HP &#x27;+Math.max(0,Math.min(100,Math.round((p-n)/Math.max(1,p)*100)))+&#x27;%&#x27;+(n&gt;p?&#x27;｜予定日を &#x27;+(n-p)+&#x27; 日超過&#x27;:&#x27;&#x27;)} $(&#x27;elapsed&#x27;).oninput=()=&gt;{let n=$(&#x27;elapsed&#x27;).valueAsNumber;if(Number.isInteger(n)&amp;&amp;n&gt;=0){$(&#x27;es&#x27;).value=ago(n);previewDays()}};$(&#x27;es&#x27;).oninput=()=&gt;{let n=Math.floor((Date.parse(day())-Date.parse($(&#x27;es&#x27;).value))/86400000);if(Number.isFinite(n)&amp;&amp;n&gt;=0){$(&#x27;elapsed&#x27;).value=n;previewDays()}};$(&#x27;ep&#x27;).oninput=previewDays;$(&#x27;imagefile&#x27;).onchange=e=&gt;{let f=e.target.files[0];if(!f)return;if(f.size&gt;500000){alert(&#x27;500KB以下の画像を選んでください&#x27;);return}let r=new FileReader();r.onload=()=&gt;pendingImage=r.result;r.readAsDataURL(f)};$(&#x27;clearimage&#x27;).onclick=()=&gt;{pendingImage=&#x27;&#x27;;$(&#x27;imagefile&#x27;).value=&#x27;&#x27;};$(&#x27;editform&#x27;).onsubmit=e=&gt;{e.preventDefault();if($(&#x27;es&#x27;).value&gt;day()){alert(&#x27;開始日は今日以前にしてください&#x27;);return}if(editing.s!==$(&#x27;es&#x27;).value||editing.p!==+$(&#x27;ep&#x27;).value)delete editing.lastAlert;Object.assign(editing,{n:$(&#x27;en&#x27;).value,e:$(&#x27;ee&#x27;).value,p:+$(&#x27;ep&#x27;).value,s:$(&#x27;es&#x27;).value,w:+$(&#x27;ew&#x27;).value,c:$(&#x27;ec&#x27;).value,h:$(&#x27;eh&#x27;).value,tone:$(&#x27;et&#x27;).value,pron:$(&#x27;ei&#x27;).value,freq:$(&#x27;ef&#x27;).value,emotion:$(&#x27;em&#x27;).value,humor:+$(&#x27;ej&#x27;).value,img:pendingImage,templates:{ok:$(&#x27;ok&#x27;).value,soon:$(&#x27;soon&#x27;).value,due:$(&#x27;due&#x27;).value,fresh:$(&#x27;fresh&#x27;).value}});save();renderItems();$(&#x27;editor&#x27;).close()};$(&#x27;deleteitem&#x27;).onclick=()=&gt;{if(confirm(&#x27;この日用品を削除しますか？&#x27;)){state.items=state.items.filter(x=&gt;x!==editing);save();renderItems();$(&#x27;editor&#x27;).close()}};function renderItems(){$(&#x27;list&#x27;).replaceChildren();state.items.forEach(x=&gt;{let y=defaults(x),el=document.createElement(&#x27;div&#x27;);el.className=&#x27;item&#x27;;el.style.borderLeft=&#x27;5px solid &#x27;+y.c;let title=document.createElement(&#x27;b&#x27;);title.textContent=x.e+&#x27; &#x27;+x.n;let info=document.createElement(&#x27;div&#x27;);info.textContent=&#x27;残り &#x27;+Math.max(0,left(x))+&#x27; 日（推定） / &#x27;+x.p+&#x27;日｜使用 &#x27;+Math.max(0,x.p-left(x))+&#x27;日｜&#x27;+y.h;let meter=document.createElement(&#x27;div&#x27;);meter.className=&#x27;meter&#x27;;let bar=document.createElement(&#x27;span&#x27;);bar.style.width=Math.max(0,Math.min(100,left(x)/x.p*100))+&#x27;%&#x27;;bar.style.background=y.c;meter.append(bar);let actions=document.createElement(&#x27;div&#x27;);actions.className=&#x27;actions&#x27;;let b=document.createElement(&#x27;button&#x27;);b.textContent=&#x27;補充した&#x27;;b.onclick=()=&gt;{x.s=day();say(x,line(x,&#x27;fresh&#x27;));save();renderItems()};let ed=document.createElement(&#x27;button&#x27;);ed.textContent=&#x27;✎ 編集&#x27;;ed.onclick=()=&gt;edit(x);actions.append(ed,b);el.append(title,info,meter,actions);$(&#x27;list&#x27;).append(el)})}function draw(m){let row=document.createElement(&#x27;div&#x27;);row.className=&#x27;msg&#x27;+(m.me?&#x27; me&#x27;:&#x27;&#x27;);let wrap=document.createElement(&#x27;div&#x27;),b=document.createElement(&#x27;div&#x27;);b.className=&#x27;bubble&#x27;;b.textContent=m.t;if(!m.me){let a=document.createElement(&#x27;button&#x27;);a.className=&#x27;avatar&#x27;;a.textContent=m.e;let person=state.items.find(x=&gt;x.n===m.n);if(person){a.style.background=defaults(person).c;if(person.img){let img=document.createElement(&#x27;img&#x27;);img.src=person.img;a.replaceChildren(img)}}a.onclick=()=&gt;{a.classList.remove(&#x27;wiggle&#x27;);void a.offsetWidth;a.classList.add(&#x27;wiggle&#x27;);let x=state.items.find(x=&gt;x.n===m.n);if(x)say(x,line(x))};row.append(a);let n=document.createElement(&#x27;div&#x27;);n.className=&#x27;name&#x27;;n.textContent=m.n+(m.emotion?&#x27; ・ &#x27;+m.emotion:&#x27;&#x27;);wrap.append(n)}wrap.append(b);row.append(wrap);$(&#x27;chat&#x27;).append(row);$(&#x27;chat&#x27;).scrollTop=$(&#x27;chat&#x27;).scrollHeight}function say(x,t){let m={n:x.n,e:x.e,t,emotion:x.currentEmotion,me:false};state.messages.push(m);draw(m);save()}function pick(a){return a[Math.floor(Math.random()*a.length)]}function line(x,kind){let y=defaults(x),n=Math.max(0,left(x)),k=kind||(left(x)&lt;=0?&#x27;due&#x27;:left(x)&lt;=y.w?&#x27;soon&#x27;:&#x27;ok&#x27;);let t=y.templates[k];if(t)return t.replaceAll(&#x27;{name}&#x27;,x.n).replaceAll(&#x27;{days}&#x27;,n).replaceAll(&#x27;{me}&#x27;,y.pron);let sets={&#x27;毒舌&#x27;:[&#x27;まだあと{days}日。勝手に引退させるなよ&#x27;,&#x27;あと{days}日だぞ。後任の面接は済んだか？&#x27;,&#x27;後任はまだか？ 労働契約終了だぞ&#x27;,&#x27;復活！ また働かされるのか&#x27;],&#x27;優しい&#x27;:[&#x27;あと{days}日くらい大丈夫だよ&#x27;,&#x27;あと{days}日くらい。買い物ついでにお願いね&#x27;,&#x27;そろそろ交換をお願いね&#x27;,&#x27;ありがとう！ またよろしくね&#x27;],&#x27;カオス&#x27;:[&#x27;残り{days}日。宇宙進出の準備中&#x27;,&#x27;緊急速報！ 王国滅亡まで{days}日&#x27;,&#x27;王国が滅亡しました。後任求む&#x27;,&#x27;第二章、復活の伝説！&#x27;],&#x27;真面目&#x27;:[&#x27;残り{days}日と推定&#x27;,&#x27;残り{days}日。補充の準備を推奨&#x27;,&#x27;交換予定日を迎えました&#x27;,&#x27;補充を確認しました&#x27;],&#x27;天然&#x27;:[&#x27;あと{days}日。あれ、今日何曜日？&#x27;,&#x27;あと{days}日らしい。たぶん！&#x27;,&#x27;あれ？ もう引退？&#x27;,&#x27;新品っていい匂い！&#x27;]};t=sets[y.h][[&#x27;ok&#x27;,&#x27;soon&#x27;,&#x27;due&#x27;,&#x27;fresh&#x27;].indexOf(k)].replaceAll(&#x27;{days}&#x27;,n);if(y.humor&gt;=4)t+=&#x27; &#x27;+pick([&#x27;会議にかけよう。&#x27;,&#x27;これは歴史的事件。&#x27;,&#x27;以上、現場からでした。&#x27;]);if(y.humor&lt;=1)t=k===&#x27;fresh&#x27;?&#x27;補充ありがとう。&#x27;:&#x27;残り&#x27;+n+&#x27;日（推定）。&#x27;;if(y.tone===&#x27;敬語&#x27;)t=y.pron+&#x27;からのご報告です。&#x27;+t.replace(&#x27;だぞ&#x27;,&#x27;です&#x27;).replace(&#x27;だよ&#x27;,&#x27;です&#x27;);else if(y.tone===&#x27;関西弁&#x27;)t=y.pron+&#x27;な、&#x27;+t.replace(&#x27;だぞ&#x27;,&#x27;やで&#x27;).replace(&#x27;だよ&#x27;,&#x27;やで&#x27;);else t=y.pron+&#x27;：&#x27;+t;return t}let busy=false;async function replies(arr,auto=false){if(busy)return;busy=true;for(let [x,t] of arr){reset();if(auto&amp;&amp;state.count&gt;=state.limit)break;$(&#x27;typing&#x27;).hidden=false;await new Promise(r=&gt;setTimeout(r,650));$(&#x27;typing&#x27;).hidden=true;if(auto)state.count++;say(x,t)}busy=false;save()}function meeting(){reset();let arr=state.items.slice().sort((a,b)=&gt;left(a)-left(b));replies(arr.filter(x=&gt;defaults(x).freq!==&#x27;無口&#x27;||left(x)&lt;=defaults(x).w).flatMap(x=&gt;defaults(x).freq===&#x27;よく喋る&#x27;?[[x,line(x)],[x,&#x27;ところで、みんなはどう？&#x27;]]:[[x,line(x)]]),true)}function send(t){if(!t.trim())return;if(busy){setTimeout(()=&gt;send(t),800);return;}let m={me:true,t};state.messages.push(m);draw(m);$(&#x27;message&#x27;).value=&#x27;&#x27;;save();let arr=state.items.filter(x=&gt;t.includes(x.n));if(!arr.length)arr=state.items;let x=arr[0];if(!x)return;let due=state.items.filter(x=&gt;left(x)&lt;=defaults(x).w);if(/買い物|買って/.test(t))replies([[x,due.length?&#x27;助かる！買い物リスト：&#x27;+due.map(y=&gt;y.n).join(&#x27;、&#x27;):&#x27;今日はまだ買い足さなくて大丈夫だぜ。&#x27;]]);else if(/何日|残り/.test(t))replies(arr.map(y=&gt;[y,line(y)]));else if(/荒|使いすぎ/.test(t))replies([[x,&#x27;実際の使用量は見てないけど、俺の引退予定はあと&#x27;+Math.max(0,left(x))+&#x27;日だ。&#x27;],...(state.items[1]&amp;&amp;state.items[1]!==x?[[state.items[1],&#x27;まあ、俺たちにも有給が欲しいよな。&#x27;]]:[])]);else if(/補充|買った/.test(t))replies([[x,&#x27;ありがとう！日用品タブで補充した商品を選んでくれよ。&#x27;]]);else replies([[x,pick([&#x27;その話、日用品会議の議題にしておくわ。&#x27;,&#x27;なるほど。ところで俺の後任の件、忘れてないよな？&#x27;,&#x27;人間も大変だな。俺も毎日働いてるけど。&#x27;])]])}function saveSettings(){state.style=$(&#x27;style&#x27;).value;state.limit=Math.max(0,Math.min(20,Number($(&#x27;limit&#x27;).value)));state.notice=Math.max(0,Math.min(3,Number($(&#x27;notice&#x27;).value)));state.interval=Number($(&#x27;interval&#x27;).value);save();$(&#x27;settings&#x27;).hidden=true}$(&#x27;style&#x27;).value=state.style;$(&#x27;limit&#x27;).value=state.limit;$(&#x27;notice&#x27;).value=state.notice;$(&#x27;send&#x27;).onsubmit=e=&gt;{e.preventDefault();send($(&#x27;message&#x27;).value)};$(&#x27;add&#x27;).onsubmit=e=&gt;{e.preventDefault();let x={n:$(&#x27;nm&#x27;).value,e:&#x27;📦&#x27;,p:Number($(&#x27;days&#x27;).value),s:ago(Number($(&#x27;addelapsed&#x27;).value)||0)};state.items.push(x);save();renderItems();say(x,&#x27;新人です！今日からよろしくお願いします！&#x27;);e.target.reset();edit(x)};state.messages.forEach(draw);renderItems();reset();state.auto=state.auto!==false;state.interval=state.interval||5;$(&#x27;interval&#x27;).value=state.interval;
+let timer, thread=null;
+function status(){reset();$(&#x27;autotoggle&#x27;).textContent=state.auto?&#x27;⏸ 自動会話を停止&#x27;:&#x27;▶ 自動会話を開始&#x27;;$(&#x27;autostatus&#x27;).textContent=&#x27;自動発言 &#x27;+state.count+&#x27; / &#x27;+state.limit+&#x27; 件&#x27;;}
+function toggleAuto(){state.auto=!state.auto;thread=null;save();status();schedule();}
+function schedule(){clearTimeout(timer);if(state.auto)timer=setTimeout(tick,(state.interval||5)*(1+Math.random()*2)*1000);}
+function speaker(exclude){let pool=state.items.filter(x=&gt;x!==exclude).flatMap(x=&gt;Array(defaults(x).freq===&#x27;よく喋る&#x27;?4:defaults(x).freq===&#x27;無口&#x27;?1:2).fill(x));return pool.length?pick(pool):null;}
+function response(x,topic){let y=defaults(x), n=Math.max(0,left(x)), target=topic.n;let lines=left(topic)&lt;=defaults(topic).w?[target+&#x27;、後任が来るまで頑張れよ。&#x27;,target+&#x27;の送別会、予算はゼロです。&#x27;,&#x27;買い物リストに&#x27;+target+&#x27;を入れてもらおう。&#x27;]: [target+&#x27;、今日もお疲れ。&#x27;,&#x27;家の中で一番働いてるの、誰だと思う？&#x27;,&#x27;俺たちにも休日が欲しいな。&#x27;];if(y.h===&#x27;優しい&#x27;)lines=[target+&#x27;、無理しないでね。&#x27;,&#x27;みんな今日もお疲れさま！&#x27;];if(y.h===&#x27;カオス&#x27;)lines=[target+&#x27;を議長に任命する！&#x27;,&#x27;速報：日用品連合、休暇を要求。&#x27;];if(y.h===&#x27;真面目&#x27;)lines=[target+&#x27;の報告を確認しました。&#x27;,&#x27;私の残り期間は約&#x27;+n+&#x27;日です。&#x27;];if(y.h===&#x27;天然&#x27;)lines=[&#x27;あれ、&#x27;+target+&#x27;って今日も出勤？&#x27;,&#x27;会議っておやつ出るの？&#x27;];let t=pick(lines).replaceAll(&#x27;俺&#x27;,y.pron);if(y.tone===&#x27;敬語&#x27;)t=y.pron+&#x27;から一言。&#x27;+t+&#x27;（以上です）&#x27;;if(y.tone===&#x27;関西弁&#x27;)t+=&#x27; ほんまやで。&#x27;;return t;}
+async function tick(){reset();status();if(!state.auto)return;if(!busy&amp;&amp;!document.hidden&amp;&amp;!$(&#x27;editor&#x27;).open&amp;&amp;state.count&lt;state.limit&amp;&amp;state.items.length){let x,t;if(!thread||thread.remaining&lt;=0||!state.items.includes(thread.topic)){let due=state.items.filter(x=&gt;left(x)&lt;=defaults(x).w);x=due.length&amp;&amp;Math.random()&lt;.65?pick(due):speaker(null);thread={topic:x,last:x,remaining:Math.min(4,1+Math.floor(Math.random()*4))};t=line(x);}else{x=speaker(thread.last);if(!x){thread=null;schedule();return;}t=response(x,thread.topic);thread.last=x;thread.remaining--;}await replies([[x,t]],true);status();}schedule();}
+
+const moods={
+&#x27;喜び&#x27;:[&#x27;今日は気分がいい！&#x27;,&#x27;これは祝杯ものだ！&#x27;,&#x27;なんだか元気が出た。&#x27;,&#x27;拍手をお願いします！&#x27;],
+&#x27;怒り&#x27;:[&#x27;ちょっと待てよ！&#x27;,&#x27;異議あり！&#x27;,&#x27;これは緊急会議だ。&#x27;,&#x27;納得いかないぞ。&#x27;],
+&#x27;悲しみ&#x27;:[&#x27;なんだか切ないな。&#x27;,&#x27;泣いてもいいですか。&#x27;,&#x27;思い出が走馬灯のように…。&#x27;,&#x27;しんみりするなあ。&#x27;],
+&#x27;不安&#x27;:[&#x27;ちょっと心配なんだけど。&#x27;,&#x27;念のため確認したい。&#x27;,&#x27;安心材料が欲しいな。&#x27;,&#x27;大丈夫かな…。&#x27;],
+&#x27;疲労&#x27;:[&#x27;今日はもう定時で帰りたい。&#x27;,&#x27;休憩を要求します。&#x27;,&#x27;体力ゲージが気になる。&#x27;,&#x27;有給ってありますか。&#x27;],
+&#x27;皮肉&#x27;:[&#x27;いやあ、実に立派だね。&#x27;,&#x27;さすが我が家だ。&#x27;,&#x27;これは教科書に載せたいね。&#x27;,&#x27;笑うしかないな。&#x27;],
+&#x27;驚き&#x27;:[&#x27;えっ、まさか！&#x27;,&#x27;今の聞いた！？&#x27;,&#x27;これは予想外だ。&#x27;,&#x27;二度見したわ。&#x27;],
+&#x27;嫉妬&#x27;:[&#x27;いいなあ、そっちばっかり。&#x27;,&#x27;たまにはこっちも見てよ。&#x27;,&#x27;待遇の差を感じるな。&#x27;,&#x27;ちょっと羨ましいぞ。&#x27;],
+&#x27;感謝&#x27;:[&#x27;いつもありがとう。&#x27;,&#x27;助かるよ、本当に。&#x27;,&#x27;感謝状を贈りたい。&#x27;,&#x27;いい同居人だな。&#x27;],
+&#x27;カオス&#x27;:[&#x27;速報です！&#x27;,&#x27;臨時国会を開きます。&#x27;,&#x27;宇宙に向けて発信中。&#x27;,&#x27;これは歴史が動く瞬間だ。&#x27;]};
+const jokes=[&#x27;日用品組合に相談しよう。&#x27;,&#x27;議事録には残さないで。&#x27;,&#x27;なお、会議の予算はゼロ。&#x27;,&#x27;これは映画化決定だな。&#x27;,&#x27;記者会見は洗面所で。&#x27;,&#x27;現場からは以上です。&#x27;,&#x27;家賃は払えないけどね。&#x27;,&#x27;誰か議長を呼んで。&#x27;,&#x27;表彰状は紙で頼む。&#x27;,&#x27;この家、ネタが尽きないな。&#x27;,&#x27;今日のニュースに載りそう。&#x27;,&#x27;労働環境について話し合おう。&#x27;,&#x27;拍手は心の中でお願いします。&#x27;,&#x27;冷蔵庫にも聞いてみよう。&#x27;,&#x27;次回の会議までに考えよう。&#x27;,&#x27;スポンサー募集中です。&#x27;,&#x27;議題が増えたな。&#x27;,&#x27;ここだけの話にしてくれ。&#x27;,&#x27;続きは明日の朝刊で。&#x27;,&#x27;座布団一枚ください。&#x27;,&#x27;日用品界の伝説になりそう。&#x27;,&#x27;会議のおやつは自腹です。&#x27;,&#x27;これ、社内報に載せよう。&#x27;,&#x27;異論はスポンジまで。&#x27;,&#x27;家庭内ニュースの一面だ。&#x27;];
+function mood(x,kind,text=&#x27;&#x27;){let y=defaults(x);if(y.emotion!==&#x27;自動&#x27;)return y.emotion;if(kind===&#x27;fresh&#x27;||/ありがとう|ごめん|買った/.test(text))return pick([&#x27;感謝&#x27;,&#x27;喜び&#x27;,&#x27;驚き&#x27;]);if(/疲れ|眠い/.test(text))return &#x27;疲労&#x27;;if(/悲しい|つらい/.test(text))return &#x27;悲しみ&#x27;;if(/荒|使いすぎ|怒/.test(text))return pick([&#x27;不安&#x27;,&#x27;皮肉&#x27;,&#x27;怒り&#x27;]);if(left(x)&lt;=y.w)return pick([&#x27;不安&#x27;,&#x27;悲しみ&#x27;,&#x27;怒り&#x27;,&#x27;皮肉&#x27;]);return pick(Object.keys(moods));}
+function decorate(x,t,k,text=&#x27;&#x27;){let y=defaults(x),m=mood(x,k,text);x.currentEmotion=m;if(y.humor&lt;=1)return t;let a=pick(moods[m]),b=pick(jokes);if(y.tone===&#x27;敬語&#x27;){a=a.replace(/だぞ|だな/g,&#x27;です&#x27;).replace(/よ！/g,&#x27;ね！&#x27;);b=b.replace(/だな/g,&#x27;ですね&#x27;);}if(y.tone===&#x27;関西弁&#x27;)a+=&#x27; ほんまにな。&#x27;;return a+&#x27; &#x27;+t+(y.humor&gt;=3?&#x27; &#x27;+b:&#x27;&#x27;);}
+const originalLine=line;line=function(x,k){let y=defaults(x),kind=k||(left(x)&lt;=0?&#x27;due&#x27;:left(x)&lt;=y.w?&#x27;soon&#x27;:&#x27;ok&#x27;);let t=originalLine(x,k);if(y.templates[kind]){x.currentEmotion=mood(x,kind);return t;}return decorate(x,t,kind);};
+const originalResponse=response;response=function(x,topic){return decorate(x,originalResponse(x,topic),&#x27;reply&#x27;);};
+const originalReplies=replies;replies=function(arr,auto=false){if(!auto){let last=state.messages.filter(m=&gt;m.me).at(-1)?.t||&#x27;&#x27;;arr=arr.map(([x,t])=&gt;[x,decorate(x,t,&#x27;reply&#x27;,last)]);}return originalReplies(arr,auto);};
+$(&#x27;editor&#x27;).addEventListener(&#x27;click&#x27;,e=&gt;{if(e.target===$(&#x27;editor&#x27;)){let r=$(&#x27;editor&#x27;).getBoundingClientRect();if(e.clientX&lt;r.left||e.clientX&gt;r.right||e.clientY&lt;r.top||e.clientY&gt;r.bottom)$(&#x27;editor&#x27;).close();}});
+
+
+function severity(x){let n=left(x);return n&lt;0?5:n===0?4:n===1?3:n&lt;=3?2:n&lt;=Math.max(7,defaults(x).w)?1:0}
+const colors=[&#x27;#79d6a1&#x27;,&#x27;#f0cf77&#x27;,&#x27;#ffb45f&#x27;,&#x27;#ff8585&#x27;,&#x27;#ff646e&#x27;,&#x27;#ff91b0&#x27;];
+const phrases=[[&#x27;まだ余裕あるぜ。&#x27;,&#x27;補充はまだ先で大丈夫。&#x27;],[&#x27;そろそろ後任を探してくれ。&#x27;,&#x27;買い物のついでに頼む！&#x27;],[&#x27;おい、そろそろ本気でやばいぞ！&#x27;,&#x27;補充の準備をしてくれ！&#x27;],[&#x27;明日が引退予定日だぞ！？&#x27;,&#x27;明日までに補充を頼む！！&#x27;],[&#x27;補充しろ！！！&#x27;,&#x27;緊急事態！！ 今すぐ残量を確認してくれ！&#x27;],[&#x27;予定日過ぎてるぞ！！！&#x27;,&#x27;こちら現場！ 生存確認を求む！！&#x27;]];
+const previousLine=line;line=function(x,k){if(k===&#x27;fresh&#x27;)return previousLine(x,k);let n=left(x),v=severity(x),y=defaults(x);x.currentEmotion=[&#x27;平常&#x27;,&#x27;予告&#x27;,&#x27;注意&#x27;,&#x27;緊急&#x27;,&#x27;危機&#x27;,&#x27;期限超過&#x27;][v];let custom=y.templates[v===0?&#x27;ok&#x27;:v&gt;=4?&#x27;due&#x27;:&#x27;soon&#x27;];let t=custom?custom.replaceAll(&#x27;{name}&#x27;,x.n).replaceAll(&#x27;{days}&#x27;,Math.max(0,n)).replaceAll(&#x27;{me}&#x27;,y.pron):pick(phrases[v]);return t;};
+function dashboard(){let root=$(&#x27;urgent&#x27;);root.replaceChildren();let h=document.createElement(&#x27;b&#x27;);h.textContent=&#x27;補充警報 • 残り日数順&#x27;;root.append(h);for(let x of state.items.slice().sort((a,b)=&gt;left(a)-left(b))){let v=severity(x),n=left(x),el=document.createElement(&#x27;div&#x27;);el.className=&#x27;alarm&#x27;+(v&gt;=3?&#x27; critical&#x27;:&#x27;&#x27;);el.style.setProperty(&#x27;--alarm&#x27;,colors[v]);let name=document.createElement(&#x27;b&#x27;);name.textContent=x.e+&#x27; &#x27;+x.n;let d=document.createElement(&#x27;small&#x27;);d.className=&#x27;days&#x27;;d.textContent=n&lt;0?&#x27;予定日 &#x27;+(-n)+&#x27;日超過&#x27;:&#x27;残り約 &#x27;+n+&#x27; 日&#x27;;let t=document.createElement(&#x27;strong&#x27;);t.textContent=phrases[v][0];let b=document.createElement(&#x27;button&#x27;);b.textContent=&#x27;補充した&#x27;;b.onclick=()=&gt;{x.s=day();say(x,line(x,&#x27;fresh&#x27;));save();renderItems()};let ed=document.createElement(&#x27;button&#x27;);ed.textContent=&#x27;編集&#x27;;ed.onclick=()=&gt;edit(x);el.append(name,d,t,b,ed);root.append(el)}}
+const oldRender=renderItems;renderItems=function(){oldRender();dashboard()};
+status=function(){reset();$(&#x27;autotoggle&#x27;).textContent=state.auto?&#x27;⏸ 自動通知を停止&#x27;:&#x27;▶ 自動通知を開始&#x27;;$(&#x27;autostatus&#x27;).textContent=&#x27;自動通知 &#x27;+state.alerts+&#x27; / &#x27;+state.notice+&#x27; 回&#x27;;};
+meeting=function(){dashboard();let arr=state.items.slice().sort((a,b)=&gt;left(a)-left(b));replies(arr.map(x=&gt;[x,line(x)]));};
+tick=async function(){reset();status();if(!state.auto)return;if(!busy&amp;&amp;!document.hidden&amp;&amp;!$(&#x27;editor&#x27;).open){dashboard();let due=state.items.filter(x=&gt;left(x)&lt;=defaults(x).w&amp;&amp;x.lastAlert!==day()).sort((a,b)=&gt;left(a)-left(b));let slots=Math.max(0,state.limit-state.count);if(due.length&amp;&amp;slots&amp;&amp;state.alerts&lt;state.notice){let batch=due.slice(0,slots);state.alerts++;batch.forEach(x=&gt;x.lastAlert=day());await replies(batch.map(x=&gt;[x,line(x)]),true);save();status();}}schedule();};
+status();renderItems();schedule();save();
+
+const pages=[[&#x27;home&#x27;,&#x27;🏰 ホーム&#x27;],[&#x27;items&#x27;,&#x27;⚔ 日用品図鑑&#x27;],[&#x27;quests&#x27;,&#x27;📜 補充クエスト&#x27;],[&#x27;bag&#x27;,&#x27;🎒 アイテム&#x27;],[&#x27;achieve&#x27;,&#x27;🏆 実績&#x27;],[&#x27;calendar&#x27;,&#x27;📅 カレンダー&#x27;],[&#x27;settings&#x27;,&#x27;⚙ 設定&#x27;]];let current=&#x27;home&#x27;;state.xp=state.xp||0;state.completed=state.completed||0;state.stock=state.stock||{};const palette=[&#x27;#69c9a2&#x27;,&#x27;#f5bc63&#x27;,&#x27;#8fbaff&#x27;,&#x27;#c59af5&#x27;,&#x27;#f28caa&#x27;];function node(tag,text,cls){let e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e}function btn(t,fn){let b=node(&#x27;button&#x27;,t);b.onclick=fn;return b}function refill(x){x.s=day();x.lastAlert=undefined;state.xp+=20;state.completed++;say(x,line(x,&#x27;fresh&#x27;));save();renderItems();if(current!==&#x27;home&#x27;&amp;&amp;current!==&#x27;items&#x27;&amp;&amp;current!==&#x27;settings&#x27;)extra();}function party(){let root=$(&#x27;party&#x27;);root.replaceChildren();state.items.forEach((x,i)=&gt;{let hp=Math.max(0,Math.min(100,Math.round(left(x)/x.p*100))),v=severity(x),card=node(&#x27;div&#x27;,undefined,&#x27;hero&#x27;);card.style.setProperty(&#x27;--hero&#x27;,colors[v]);card.dataset.danger=v;let a=btn(x.e,()=&gt;{say(x,line(x));a.classList.remove(&#x27;wiggle&#x27;);void a.offsetWidth;a.classList.add(&#x27;wiggle&#x27;)});a.className=&#x27;sprite&#x27;;if(x.img){let im=node(&#x27;img&#x27;);im.src=x.img;a.replaceChildren(im)}let m=node(&#x27;div&#x27;,undefined,&#x27;meter&#x27;),bar=node(&#x27;span&#x27;);bar.style.width=hp+&#x27;%&#x27;;bar.style.background=v&gt;=3?&#x27;#ff646e&#x27;:v&gt;=1?&#x27;#f5bc63&#x27;:&#x27;#69c9a2&#x27;;m.append(bar);card.append(a,node(&#x27;b&#x27;,x.n),node(&#x27;small&#x27;,&#x27;HP &#x27;+hp+&#x27;% ｜残り &#x27;+Math.max(0,left(x))+&#x27;日&#x27;),node(&#x27;small&#x27;,&#x27;使用中 &#x27;+Math.max(0,x.p-left(x))+&#x27;日&#x27;),m,btn(&#x27;✎ 編集&#x27;,()=&gt;edit(x)),btn(&#x27;＋ 補充&#x27;,()=&gt;refill(x)));root.append(card)});$(&#x27;level&#x27;).textContent=&#x27;Lv. &#x27;+(1+Math.floor(state.xp/100))+&#x27;　✦ &#x27;+state.xp+&#x27; XP&#x27;;}
+function extra(){let r=$(&#x27;extra&#x27;);r.replaceChildren();let title=pages.find(p=&gt;p[0]===current)?.[1]||&#x27;&#x27;;r.append(node(&#x27;h2&#x27;,title));let grid=node(&#x27;div&#x27;,undefined,&#x27;tiles&#x27;);if(current===&#x27;quests&#x27;){let due=state.items.filter(x=&gt;left(x)&lt;=defaults(x).w).sort((a,b)=&gt;left(a)-left(b));if(!due.length)r.append(node(&#x27;p&#x27;,&#x27;現在、補充クエストはありません。&#x27;));due.forEach(x=&gt;{let t=node(&#x27;div&#x27;,undefined,&#x27;tile&#x27;);t.append(node(&#x27;h3&#x27;,x.e+&#x27; &#x27;+x.n+&#x27;を救え！&#x27;),node(&#x27;p&#x27;,line(x)),btn(&#x27;達成：補充した ＋20 XP&#x27;,()=&gt;refill(x)));grid.append(t)})}if(current===&#x27;bag&#x27;){state.items.forEach(x=&gt;{let t=node(&#x27;div&#x27;,undefined,&#x27;tile&#x27;),key=x.n,n=state.stock[key]||0;t.append(node(&#x27;h3&#x27;,x.e+&#x27; &#x27;+x.n),node(&#x27;p&#x27;,&#x27;予備在庫：&#x27;+n+&#x27;個&#x27;),btn(&#x27;＋ 予備を購入&#x27;,()=&gt;{state.stock[key]=n+1;save();extra()}),btn(&#x27;予備を使う&#x27;,()=&gt;{if(n&gt;0){state.stock[key]=n-1;refill(x)}}));grid.append(t)})}if(current===&#x27;achieve&#x27;){[[&#x27;冒険者レベル&#x27;,1+Math.floor(state.xp/100)],[&#x27;獲得経験値&#x27;,state.xp+&#x27; XP&#x27;],[&#x27;補充クエスト達成&#x27;,state.completed+&#x27;回&#x27;],[&#x27;称号&#x27;,state.completed&gt;=10?&#x27;暮らしの守護者&#x27;:state.completed&gt;=1?&#x27;見習い補充騎士&#x27;:&#x27;旅立ちの冒険者&#x27;]].forEach(([a,b])=&gt;{let t=node(&#x27;div&#x27;,undefined,&#x27;tile&#x27;);t.append(node(&#x27;h3&#x27;,a),node(&#x27;p&#x27;,b));grid.append(t)})}if(current===&#x27;calendar&#x27;){let d=new Date(day()+&#x27;T12:00:00&#x27;),y=d.getFullYear(),m=d.getMonth();r.append(node(&#x27;h3&#x27;,y+&#x27;年 &#x27;+(m+1)+&#x27;月&#x27;));let c=node(&#x27;div&#x27;,undefined,&#x27;calendar&#x27;);[&#x27;日&#x27;,&#x27;月&#x27;,&#x27;火&#x27;,&#x27;水&#x27;,&#x27;木&#x27;,&#x27;金&#x27;,&#x27;土&#x27;].forEach(w=&gt;c.append(node(&#x27;b&#x27;,w)));for(let i=0;i&lt;new Date(y,m,1).getDay();i++)c.append(node(&#x27;div&#x27;));for(let i=1;i&lt;=new Date(y,m+1,0).getDate();i++){let k=new Date(y,m,i).toLocaleDateString(&#x27;sv-SE&#x27;),cell=node(&#x27;div&#x27;,i,&#x27;cell&#x27;+(k===day()?&#x27; today&#x27;:&#x27;&#x27;));state.items.forEach(x=&gt;{let due=new Date(Date.parse(x.s)+x.p*86400000).toISOString().slice(0,10);if(due===k)cell.append(node(&#x27;span&#x27;,x.e+&#x27; &#x27;+x.n))});c.append(cell)}r.append(c);r.append(node(&#x27;p&#x27;,&#x27;今月以降の補充予定&#x27;));state.items.slice().sort((a,b)=&gt;left(a)-left(b)).forEach(x=&gt;r.append(node(&#x27;p&#x27;,x.e+&#x27; &#x27;+x.n+&#x27;：&#x27;+new Date(Date.parse(x.s)+x.p*86400000).toISOString().slice(0,10))))}r.append(grid)}function go(id){current=id;for(let k of [&#x27;home&#x27;,&#x27;items&#x27;,&#x27;settings&#x27;])$(k).hidden=k!==id;$(&#x27;extra&#x27;).hidden=[&#x27;home&#x27;,&#x27;items&#x27;,&#x27;settings&#x27;].includes(id);$(&#x27;chatpage&#x27;).hidden=id!==&#x27;home&#x27;;$(&#x27;controls&#x27;).hidden=id!==&#x27;home&#x27;;$(&#x27;navigation&#x27;).replaceChildren();pages.forEach(([k,t])=&gt;{let b=btn(t,()=&gt;go(k));if(k===id)b.className=&#x27;active&#x27;;$(&#x27;navigation&#x27;).append(b)});if(!$(&#x27;extra&#x27;).hidden)extra();party()}panel=go;const prevRender=renderItems;renderItems=function(){prevRender();party();for(let root of [$(&#x27;list&#x27;),$(&#x27;urgent&#x27;)]){let cards=root.querySelectorAll(&#x27;.item,.alarm&#x27;);let xs=root.id===&#x27;urgent&#x27;?state.items.slice().sort((a,b)=&gt;left(a)-left(b)):state.items;cards.forEach((c,i)=&gt;{for(let b of c.querySelectorAll(&#x27;button&#x27;))if(b.textContent===&#x27;補充した&#x27;)b.onclick=()=&gt;refill(xs[i])})}};const prevSettings=saveSettings;saveSettings=function(){prevSettings();status();schedule();go(&#x27;home&#x27;)};go(&#x27;home&#x27;);renderItems();
+
+phrases.splice(0,6,[&#x27;余裕だぜ！&#x27;,&#x27;まだ大丈夫。&#x27;],[&#x27;そろそろ準備！&#x27;,&#x27;買い足してね。&#x27;],[&#x27;補充頼む！&#x27;,&#x27;もう限界！&#x27;],[&#x27;明日で限界！！&#x27;,&#x27;急げ！！&#x27;],[&#x27;補充しろ！！！&#x27;,&#x27;残量確認！！&#x27;],[&#x27;期限超過！！！&#x27;,&#x27;生存確認求む！&#x27;]);
+const shortLine=line;line=function(x,k){if(k===&#x27;fresh&#x27;){let t=defaults(x).templates.fresh;return t?t.replaceAll(&#x27;{name}&#x27;,x.n).replaceAll(&#x27;{days}&#x27;,Math.max(0,left(x))).replaceAll(&#x27;{me}&#x27;,defaults(x).pron):&#x27;復活！！&#x27;}return shortLine(x,k)};
+replies=function(arr,auto=false){return originalReplies(arr,auto)};
+function updateDate(){ $(&#x27;simdate&#x27;).textContent=day()+&#x27;（管理日）&#x27;; }
+function advance(n){if(busy||$(&#x27;editor&#x27;).open)return;let next=(state.offset||0)+n;if(n&lt;0&amp;&amp;state.items.some(x=&gt;x.s&gt;ago(-n))) {alert(&#x27;使用開始日より前には戻せません&#x27;);return;}state.offset=next;reset();state.items.forEach(x=&gt;delete x.lastAlert);save();updateDate();renderItems();status();if(!$(&#x27;extra&#x27;).hidden)extra();if(n&gt;0&amp;&amp;state.auto){clearTimeout(timer);tick();}}
+updateDate();renderItems();
+&lt;/script&gt;&lt;/html&gt;</code></pre></div><h3>ポイント：残り日数とHP</h3><p>平均使用日数と経過日数から残り日数を計算し、HPゲージで分かりやすく表示しています。</p><h3>ポイント：条件分岐</h3><p>残り日数に応じて色やセリフを変え、補充の必要性が伝わるようにしました。</p><h3>ポイント：データの保存</h3><p>ブラウザ内に日用品の情報を保存することで、次に開いたときも管理を続けられるようにしました。</p></section>
+<section><h2>まとめ</h2><p>今回の制作を通して、プログラミングを日常生活の問題解決に活用できることが分かりました。日用品の管理にゲームの要素を取り入れることで、楽しく続けられるように工夫しました。今後はさらに使いやすいアプリにしていきたいです。</p></section>
+</div>
+<!-- 写真拡大用の黒い背景(普段は非表示。JavaScriptが開閉する) -->
+
+<div class="lb" id="lb" aria-hidden="true"><img alt=""></div>
+
+
+
+<!-- ======== JavaScript：動きを担当する部分 ======== -->
+
+<script>
+
+// 時間帯の切り替え
+
+const btns=document.querySelectorAll('.time button');
+
+btns.forEach(b=>b.addEventListener('click',()=>{
+
+  document.body.dataset.time=b.dataset.t;
+
+  btns.forEach(x=>x.setAttribute('aria-pressed',x===b));
+
+}));
+
+
+
+// 鳥: 数秒〜十数秒おきに画面を横切る
+
+const BIRD='<svg viewBox="0 0 34 20"><path class="wing" d="M17 10 Q9 0 0 6 Q9 5 17 10Z" fill="#1a2a3a"/><path class="wing r" d="M17 10 Q25 0 34 6 Q25 5 17 10Z" fill="#1a2a3a"/></svg>';
+
+// 鳥の群れを1回飛ばす関数：数・高さ・向き・速さはランダム。Web Animations API(el.animate)で画面を横切らせ、終わったら消す
+
+function flock(){
+
+  if(matchMedia('(prefers-reduced-motion:reduce)').matches) return;
+
+  const n=1+Math.floor(Math.random()*4), W=innerWidth, H=innerHeight;
+
+  const ltr=Math.random()<.5, y0=H*(.08+Math.random()*.3), dur=14000+Math.random()*8000;
+
+  for(let i=0;i<n;i++){
+
+    const el=document.createElement('div'); el.className='bird'; el.innerHTML=BIRD;
+
+    const s=.6+Math.random()*.6, dx=i*38, dy=(i%2?1:-1)*i*14;
+
+    el.style.opacity=document.body.dataset.time==='night'?.35:.85;
+
+    document.body.appendChild(el);
+
+    const a=el.animate([
+
+      {transform:`translate(${ltr?-80-dx:W+80+dx}px,${y0+dy}px) scale(${s}) scaleX(${ltr?1:-1})`},
+
+      {transform:`translate(${W*.5}px,${y0+dy-H*.08}px) scale(${s}) scaleX(${ltr?1:-1})`,offset:.5},
+
+      {transform:`translate(${ltr?W+80:-80}px,${y0+dy+H*.03}px) scale(${s}) scaleX(${ltr?1:-1})`}
+
+    ],{duration:dur+i*400,easing:'ease-in-out'});
+
+    a.onfinish=()=>el.remove();
+
+  }
+
+}
+
+// 最初の鳥は2.5秒後、そのあとは6〜15秒おきにランダムで飛ばす
+
+setTimeout(flock,2500);
+
+(function loop(){setTimeout(()=>{flock();loop()},6000+Math.random()*9000)})();
+
+
+
+// 写真をクリックで拡大
+
+// 写真を拡大表示する部分：画像クリックで表示、クリックか Esc キーで閉じる
+
+const lb=document.getElementById('lb'),lbi=lb.querySelector('img');
+
+document.querySelectorAll('figure img').forEach(i=>i.addEventListener('click',()=>{lbi.src=i.src;lbi.alt=i.alt;lb.classList.add('on')}));
+
+lb.addEventListener('click',()=>lb.classList.remove('on'));
+
+addEventListener('keydown',e=>{if(e.key==='Escape')lb.classList.remove('on')});
+
+
+
+// コードのコピーボタン：押すと中のコードをクリップボードにコピーする
+
+document.querySelectorAll('.copy').forEach(b=>b.addEventListener('click',()=>{
+
+  const t=b.parentElement.querySelector('code').innerText;
+
+  const done=()=>{b.textContent='コピーしました';setTimeout(()=>b.textContent='コピー',1500)}; const fallback=()=>{const x=document.createElement('textarea');x.value=t;document.body.appendChild(x);x.select();if(document.execCommand('copy'))done();x.remove()}; if(navigator.clipboard)navigator.clipboard.writeText(t).then(done,fallback);else fallback();
+
+}));
+
+document.getElementById('downloadApp').addEventListener('click',()=>{const u=URL.createObjectURL(new Blob([document.getElementById('appSource').textContent],{type:'text/html;charset=utf-8'}));const a=document.createElement('a');a.href=u;a.download='mono-talk.html';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)});
+</script>
+
+</body>
+
+</html>
+
+
+
+
